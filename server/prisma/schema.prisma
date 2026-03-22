@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  admin
+  manager
+  staff
+  customer
+}
+
+enum AttendanceStatus {
+  present
+  late
+  absent
+  leave
+  half_day
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  done
+  cancelled
+}
+
+enum BillType {
+  electricity
+  water
+  rent
+  salary
+  misc
+  customer
+}
+
+enum BillStatus {
+  pending
+  approved
+  rejected
+  paid
+}
+
+enum DocType {
+  electricity
+  water
+  invoice
+  receipt
+  report
+  other
+}
+
+enum NotifType {
+  bill
+  task
+  attendance
+  sync
+  system
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(staff)
+  avatar       String?
+  department   String?
+  phone        String?
+  isActive     Boolean  @default(true)
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  attendance        Attendance[]       @relation("UserAttendance")
+  approvedAttendance Attendance[]      @relation("ApprovedAttendance")
+  assignedTasks     Task[]             @relation("AssignedTo")
+  createdTasks      Task[]             @relation("AssignedBy")
+  bills             Bill[]             @relation("SubmittedBills")
+  approvedBills     Bill[]             @relation("ApprovedBills")
+  products          Product[]
+  uploads           Upload[]
+  notifications     Notification[]
+}
+
+model Attendance {
+  id         String           @id @default(uuid())
+  user       User             @relation("UserAttendance", fields: [userId], references: [id])
+  userId     String
+  date       String
+  checkIn    String?
+  checkOut   String?
+  status     AttendanceStatus @default(present)
+  note       String?
+  approvedBy User?            @relation("ApprovedAttendance", fields: [approvedById], references: [id])
+  approvedById String?
+  createdAt  DateTime         @default(now())
+
+  @@unique([userId, date])
+}
+
+model Task {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  assignedTo  User         @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedToId String
+  assignedBy  User         @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedById String
+  priority    TaskPriority @default(medium)
+  status      TaskStatus   @default(pending)
+  dueDate     DateTime?
+  completedAt DateTime?
+  tags        String[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Bill {
+  id           String     @id @default(uuid())
+  title        String
+  type         BillType   @default(misc)
+  amount       Float
+  submittedBy  User       @relation("SubmittedBills", fields: [submittedById], references: [id])
+  submittedById String
+  customer     String?
+  fileUrl      String?
+  fileName     String?
+  status       BillStatus @default(pending)
+  adminMessage String?
+  approvedBy   User?      @relation("ApprovedBills", fields: [approvedById], references: [id])
+  approvedById String?
+  approvedAt   DateTime?
+  month        String?
+  category     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  category    String?
+  imageUrl    String?
+  inStock     Boolean  @default(true)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Upload {
+  id             String   @id @default(uuid())
+  originalName   String
+  storedName     String
+  fileUrl        String
+  fileType       String?
+  fileSize       Int?
+  tag            String?
+  month          String?
+  docType        DocType  @default(other)
+  uploadedBy     User     @relation(fields: [uploadedById], references: [id])
+  uploadedById   String
+  syncedToSheets Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  recipient User      @relation(fields: [recipientId], references: [id])
+  recipientId String
+  type      NotifType @default(system)
+  title     String
+  message   String
+  read      Boolean   @default(false)
+  link      String?
+  createdAt DateTime  @default(now())
+}

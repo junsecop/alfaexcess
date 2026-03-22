@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(node --check server.js)",
+      "Bash(node --check routes/auth.js)",
+      "Bash(node --check routes/attendance.js)",
+      "Bash(node --check routes/billing.js)",
+      "Bash(npx prisma:*)",
+      "Bash(nslookup db.lgwnmwntoewwgkddrshd.supabase.co 8.8.8.8)"
+    ]
+  }
+}
