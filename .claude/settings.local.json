@@ -9,7 +9,11 @@
       "Bash(node --check routes/billing.js)",
       "Bash(npx prisma:*)",
       "Bash(nslookup db.lgwnmwntoewwgkddrshd.supabase.co 8.8.8.8)",
-      "Bash(node server.js)"
+      "Bash(node server.js)",
+      "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/supabase\")",
+      "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/server\")",
+      "Bash(cp -r \"c:/Users/albin/Desktop/alfanex.in/attendece app/server-backup\" \"c:/Users/albin/Desktop/alfanex.in/attendece app/server\")",
+      "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/server-backup\")"
     ]
   }
 }

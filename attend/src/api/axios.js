@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+const BASE = import.meta.env.VITE_API_URL || '/api'
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: BASE,
   withCredentials: true,
 })
 
@@ -13,10 +15,9 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry && !original.url?.includes('/auth/')) {
       original._retry = true
       try {
-        await axios.post('/api/auth/refresh', {}, { withCredentials: true })
+        await axios.post(`${BASE}/auth/refresh`, {}, { withCredentials: true })
         return api(original)
       } catch {
-        // Let the error propagate — AuthContext will set user=null, PrivateRoute redirects
         return Promise.reject(err)
       }
     }
