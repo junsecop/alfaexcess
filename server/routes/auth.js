@@ -11,9 +11,10 @@ const signTokens = (id) => ({
   refreshToken: jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' }),
 })
 
+const isProd = process.env.NODE_ENV === 'production'
 const setCookies = (res, accessToken, refreshToken) => {
-  res.cookie('accessToken', accessToken, { httpOnly: true, secure: false, maxAge: 8 * 60 * 60 * 1000, sameSite: 'lax' })
-  res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: false, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' })
+  res.cookie('accessToken', accessToken, { httpOnly: true, secure: isProd, maxAge: 8 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
+  res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
 }
 
 const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department })
