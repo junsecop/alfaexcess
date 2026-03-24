@@ -8,5 +8,8 @@
     "startCommand": "node server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
+  },
+  "nixpacks": {
+    "node": "20"
   }
 }
