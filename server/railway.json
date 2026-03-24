@@ -13,6 +13,11 @@
     "node": "20"
   },
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "CLIENT_URL": "https://alfaexcess.vercel.app",
+    "SUPABASE_URL": "https://cduckvdiwjkcaoymzzwc.supabase.co",
+    "SUPABASE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNkdWNrdmRpd2prY2FveW16endjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNTA5MTEsImV4cCI6MjA4OTkyNjkxMX0.SyUVCnvi9c_REbY1r-cn-RB9WN9qvoRyqkBSj3ZmkXI",
+    "JWT_SECRET": "alfanex_jwt_s3cr3t_k3y_2024_xZ9q",
+    "JWT_REFRESH_SECRET": "alfanex_refresh_s3cr3t_k3y_2024_mN7p"
   }
 }
