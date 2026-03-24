@@ -11,6 +11,7 @@ import DataUploads from './pages/DataUploads'
 import Products from './pages/Products'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
+import Users from './pages/Users'
 
 export default function App() {
   return (
@@ -39,6 +40,9 @@ export default function App() {
           } />
           <Route path="/notifications" element={
             <PrivateRoute><Notifications /></PrivateRoute>
+          } />
+          <Route path="/users" element={
+            <PrivateRoute roles={['admin','manager']}><Users /></PrivateRoute>
           } />
           <Route path="/settings" element={
             <PrivateRoute><Settings /></PrivateRoute>

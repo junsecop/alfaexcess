@@ -73,23 +73,32 @@ function SubmitBill({ onSubmitted }) {
 }
 
 function BillRow({ bill, onAction, isManager }) {
-  const [msg, setMsg] = useState('')
   const [rejMsg, setRejMsg] = useState('')
   const [showReject, setShowReject] = useState(false)
 
   const approve = async () => {
     try {
-      await api.patch(`/billing/${bill._id}/approve`, { status: 'approved' })
+      await api.patch(`/billing/${bill.id}/approve`, { status: 'approved' })
       onAction()
     } catch {}
   }
 
   const reject = async () => {
     try {
-      await api.patch(`/billing/${bill._id}/approve`, { status: 'rejected', adminMessage: rejMsg })
+      await api.patch(`/billing/${bill.id}/approve`, { status: 'rejected', adminMessage: rejMsg })
       onAction()
       setShowReject(false)
     } catch {}
+  }
+
+  const deleteBill = async () => {
+    if (!confirm(`Delete "${bill.title}"? This cannot be undone.`)) return
+    try {
+      await api.delete(`/billing/${bill.id}`)
+      onAction()
+    } catch (e) {
+      alert(e.response?.data?.message || 'Failed to delete')
+    }
   }
 
   return (
@@ -105,22 +114,27 @@ function BillRow({ bill, onAction, isManager }) {
         </span>
       </td>
       <td className="px-4 py-3">
-        {isManager && bill.status === 'pending' && (
-          <div className="flex gap-2 items-center">
-            <button onClick={approve} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-medium">Approve</button>
-            <button onClick={() => setShowReject(s => !s)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-medium">Reject</button>
-            {showReject && (
-              <div className="flex gap-1">
-                <input placeholder="Reason" value={rejMsg} onChange={e => setRejMsg(e.target.value)}
-                  className="text-xs px-2 py-1 border border-black/15 rounded" />
-                <button onClick={reject} className="text-xs px-2 py-1 bg-red-600 text-white rounded">Go</button>
-              </div>
-            )}
-          </div>
-        )}
-        {bill.fileUrl && (
-          <a href={bill.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-[#111318] underline ml-1">File</a>
-        )}
+        <div className="flex flex-wrap gap-2 items-center">
+          {isManager && bill.status === 'pending' && (
+            <>
+              <button onClick={approve} className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded font-medium">Approve</button>
+              <button onClick={() => setShowReject(s => !s)} className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded font-medium">Reject</button>
+              {showReject && (
+                <div className="flex gap-1">
+                  <input placeholder="Reason" value={rejMsg} onChange={e => setRejMsg(e.target.value)}
+                    className="text-xs px-2 py-1 border border-black/15 rounded" />
+                  <button onClick={reject} className="text-xs px-2 py-1 bg-red-600 text-white rounded">Send</button>
+                </div>
+              )}
+            </>
+          )}
+          {bill.fileUrl && (
+            <a href={bill.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline">View File</a>
+          )}
+          {isManager && (
+            <button onClick={deleteBill} className="text-xs text-red-400 hover:text-red-600 ml-1">Delete</button>
+          )}
+        </div>
       </td>
     </tr>
   )
@@ -205,7 +219,7 @@ export default function Billing() {
               <tbody>
                 {bills.length === 0
                   ? <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-black/30">No bills</td></tr>
-                  : bills.map(b => <BillRow key={b._id} bill={b} onAction={fetchAll} isManager={isManager} />)}
+                  : bills.map(b => <BillRow key={b.id} bill={b} onAction={fetchAll} isManager={isManager} />)}
               </tbody>
             </table>
           </div>
@@ -255,7 +269,7 @@ export default function Billing() {
                 {myBills.length === 0
                   ? <tr><td colSpan={6} className="px-4 py-10 text-center text-sm text-black/30">No bills</td></tr>
                   : myBills.map(b => (
-                    <tr key={b._id} className="border-b border-black/5 last:border-0">
+                    <tr key={b.id} className="border-b border-black/5 last:border-0">
                       <td className="px-4 py-3 font-medium text-[#111318]">{b.title}</td>
                       <td className="px-4 py-3 text-black/60 capitalize">{b.type}</td>
                       <td className="px-4 py-3 font-medium">₹{b.amount?.toLocaleString()}</td>

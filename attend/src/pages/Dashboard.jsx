@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [checkingIn, setCheckingIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
+  const [showCheckoutMenu, setShowCheckoutMenu] = useState(false)
   const [msg, setMsg] = useState('')
 
   const month = new Date().toISOString().slice(0, 7)
@@ -47,13 +48,14 @@ export default function Dashboard() {
     }
   }
 
-  const handleCheckOut = async () => {
+  const handleCheckOut = async (halfDay = false) => {
     setCheckingOut(true)
+    setShowCheckoutMenu(false)
     setMsg('')
     try {
-      const r = await api.post('/attendance/checkout')
+      const r = await api.post('/attendance/checkout', { halfDay })
       setToday(r.data)
-      setMsg('Checked out successfully')
+      setMsg(halfDay ? 'Half day marked' : 'Checked out successfully')
     } catch (e) {
       setMsg(e.response?.data?.message || 'Error')
     } finally {
@@ -88,10 +90,10 @@ export default function Dashboard() {
           <div className="bg-white rounded-2xl p-6 border border-black/8 flex items-center justify-between gap-6">
             <div>
               <p className="text-sm font-medium text-[#111318] mb-1">Today's Attendance</p>
-              {today ? (
+              {today?.checkIn ? (
                 <div className="space-y-1">
                   <p className="text-xs text-black/50">
-                    Check-in: <span className="font-semibold text-[#111318]">{today.checkIn || '—'}</span>
+                    Check-in: <span className="font-semibold text-[#111318]">{today.checkIn}</span>
                     {today.checkOut && (
                       <> &nbsp;·&nbsp; Check-out: <span className="font-semibold text-[#111318]">{today.checkOut}</span></>
                     )}
@@ -99,6 +101,7 @@ export default function Dashboard() {
                   <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium capitalize
                     ${today.status === 'present' ? 'bg-green-100 text-green-700'
                     : today.status === 'late' ? 'bg-yellow-100 text-yellow-700'
+                    : today.status === 'half-day' ? 'bg-purple-100 text-purple-700'
                     : 'bg-red-100 text-red-700'}`}>
                     {today.status}
                   </span>
@@ -106,9 +109,11 @@ export default function Dashboard() {
               ) : (
                 <p className="text-xs text-black/40">Not checked in yet</p>
               )}
-              {msg && <p className="text-xs mt-2 text-[#c8f04a]">{msg}</p>}
+              {msg && <p className="text-xs mt-2 font-medium" style={{ color: '#c8f04a' }}>{msg}</p>}
             </div>
-            <div className="flex gap-3">
+
+            <div className="flex gap-3 items-center">
+              {/* Check In */}
               <button
                 onClick={handleCheckIn}
                 disabled={!!today?.checkIn || checkingIn}
@@ -117,13 +122,42 @@ export default function Dashboard() {
               >
                 {checkingIn ? '…' : 'Check In'}
               </button>
-              <button
-                onClick={handleCheckOut}
-                disabled={!today?.checkIn || !!today?.checkOut || checkingOut}
-                className="px-5 py-2 rounded-lg text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5"
-              >
-                {checkingOut ? '…' : 'Check Out'}
-              </button>
+
+              {/* Check Out — dropdown with Full Day / Half Day */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowCheckoutMenu(v => !v)}
+                  disabled={!today?.checkIn || !!today?.checkOut || checkingOut}
+                  className="px-5 py-2 rounded-lg text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5 flex items-center gap-1"
+                >
+                  {checkingOut ? '…' : 'Check Out'}
+                  {!today?.checkOut && today?.checkIn && (
+                    <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                </button>
+
+                {showCheckoutMenu && (
+                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
+                    <button
+                      onClick={() => handleCheckOut(false)}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 transition font-medium"
+                    >
+                      Full Day
+                      <p className="text-xs text-black/40 font-normal">Normal checkout</p>
+                    </button>
+                    <div className="border-t border-black/5" />
+                    <button
+                      onClick={() => handleCheckOut(true)}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-purple-50 transition font-medium text-purple-700"
+                    >
+                      Half Day
+                      <p className="text-xs text-purple-400 font-normal">Mark as half-day leave</p>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -44,7 +44,7 @@ export default function DataUploads() {
   const handleDelete = async (id) => {
     if (!confirm('Delete this file?')) return
     await api.delete(`/uploads/${id}`)
-    setDocs(d => d.filter(x => x._id !== id))
+    setDocs(d => d.filter(x => x.id !== id))
   }
 
   const formatSize = (bytes) => {
@@ -110,7 +110,7 @@ export default function DataUploads() {
               {docs.length === 0
                 ? <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-black/30">No uploads yet</td></tr>
                 : docs.map(d => (
-                  <tr key={d._id} className="border-b border-black/5 last:border-0 hover:bg-black/2">
+                  <tr key={d.id} className="border-b border-black/5 last:border-0 hover:bg-black/2">
                     <td className="px-4 py-3">
                       <a href={d.fileUrl} target="_blank" rel="noreferrer"
                         className="text-[#111318] font-medium underline text-sm truncate max-w-[180px] block">
@@ -123,7 +123,7 @@ export default function DataUploads() {
                     <td className="px-4 py-3 text-black/50 text-xs">{formatSize(d.fileSize)}</td>
                     <td className="px-4 py-3 text-black/50 text-xs">{d.uploadedBy?.name || '—'}</td>
                     <td className="px-4 py-3">
-                      <button onClick={() => handleDelete(d._id)}
+                      <button onClick={() => handleDelete(d.id)}
                         className="text-xs text-red-400 hover:text-red-600">Delete</button>
                     </td>
                   </tr>

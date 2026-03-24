@@ -17,8 +17,10 @@ export const protect = async (req, res, next) => {
   }
 }
 
+// manager has full admin permissions
 export const requireRole = (...roles) => (req, res, next) => {
-  if (!roles.includes(req.user.role)) {
+  const role = req.user.role === 'manager' ? 'admin' : req.user.role
+  if (!roles.includes(role)) {
     return res.status(403).json({ message: 'Access denied' })
   }
   next()

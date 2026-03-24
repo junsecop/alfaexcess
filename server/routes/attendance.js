@@ -14,21 +14,22 @@ router.post('/checkin', protect, async (req, res) => {
   const existing = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
   if (existing) return res.status(400).json({ message: 'Already checked in today' })
   const now = new Date()
-  const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15)
+  const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30)
   const record = await prisma.attendance.create({
     data: { userId: req.user.id, date: today(), checkIn: timeNow(), status: isLate ? 'late' : 'present' },
   })
   res.status(201).json(record)
 })
 
-// Check out
+// Check out — { halfDay: true } marks as half_day
 router.post('/checkout', protect, async (req, res) => {
+  const { halfDay } = req.body
   const record = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
   if (!record) return res.status(404).json({ message: 'No check-in found for today' })
   if (record.checkOut) return res.status(400).json({ message: 'Already checked out' })
   const updated = await prisma.attendance.update({
     where: { id: record.id },
-    data: { checkOut: timeNow() },
+    data: { checkOut: timeNow(), ...(halfDay && { status: 'half_day' }) },
   })
   res.json(updated)
 })
@@ -75,8 +76,8 @@ router.post('/mark', protect, requireRole('admin', 'manager'), async (req, res) 
   res.json(record)
 })
 
-// Sync to Sheets (admin)
-router.post('/sync', protect, requireRole('admin'), async (req, res) => {
+// Sync to Sheets (admin/manager)
+router.post('/sync', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month } = req.body
   const records = await prisma.attendance.findMany({
     where: month ? { date: { startsWith: month } } : {},

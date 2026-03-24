@@ -2,26 +2,39 @@ import express from 'express'
 import multer from 'multer'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { createClient } from '@supabase/supabase-js'
 import prisma from '../config/db.js'
 import { protect, requireRole } from '../middleware/auth.js'
 
 const router = express.Router()
 
-const storage = multer.diskStorage({
-  destination: 'uploads/docs/',
-  filename: (_, file, cb) => cb(null, `${uuidv4()}${path.extname(file.originalname)}`),
-})
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } })
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+
+// Keep file in memory for Supabase upload
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
 
 // Upload a document (admin/manager)
 router.post('/', protect, requireRole('admin', 'manager'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
   const { tag, month, docType } = req.body
+
+  const ext = path.extname(req.file.originalname)
+  const storedName = `${uuidv4()}${ext}`
+  const filePath = `docs/${storedName}`
+
+  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, {
+    contentType: req.file.mimetype,
+    upsert: false,
+  })
+  if (error) return res.status(500).json({ message: error.message })
+
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+
   const doc = await prisma.upload.create({
     data: {
       originalName: req.file.originalname,
-      storedName: req.file.filename,
-      fileUrl: `/uploads/docs/${req.file.filename}`,
+      storedName,
+      fileUrl: publicUrl,
       fileType: req.file.mimetype,
       fileSize: req.file.size,
       tag: tag || null,
@@ -49,6 +62,13 @@ router.get('/', protect, requireRole('admin', 'manager'), async (req, res) => {
 
 // Delete upload (admin)
 router.delete('/:id', protect, requireRole('admin'), async (req, res) => {
+  const doc = await prisma.upload.findUnique({ where: { id: req.params.id } })
+  if (!doc) return res.status(404).json({ message: 'Not found' })
+
+  // Remove from Supabase Storage
+  const filePath = `docs/${doc.storedName}`
+  await sb.storage.from('uploads').remove([filePath])
+
   await prisma.upload.delete({ where: { id: req.params.id } })
   res.json({ message: 'Deleted' })
 })
