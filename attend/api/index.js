@@ -357,16 +357,22 @@ app.get('/api/attendance/stats', protect, requireRole('admin', 'manager'), async
 // BILLING ROUTES
 // ══════════════════════════════════════════════════════════════
 
-app.post('/api/billing', protect, upload.single('file'), async (req, res) => {
-  const { title, type, amount, month, category, customer } = req.body
-  let fileUrl = null, fileName = null
-  if (req.file) {
-    const { publicUrl } = await uploadToStorage(req.file, 'bills')
-    fileUrl = publicUrl
-    fileName = req.file.originalname
-  }
+// Get a signed upload URL — frontend uploads directly to Supabase (bypasses Vercel size limits)
+app.post('/api/billing/upload-url', protect, async (req, res) => {
+  const { fileName, contentType } = req.body
+  if (!fileName) return res.status(400).json({ message: 'fileName required' })
+  const ext = path.extname(fileName)
+  const filePath = `bills/${uuidv4()}${ext}`
+  const { data, error } = await sb.storage.from('uploads').createSignedUploadUrl(filePath)
+  if (error) return res.status(500).json({ message: error.message })
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  res.json({ signedUrl: data.signedUrl, token: data.token, filePath, publicUrl })
+})
+
+app.post('/api/billing', protect, async (req, res) => {
+  const { title, type, amount, month, category, customer, fileUrl, fileName } = req.body
   const bill = await db.bill.create({
-    data: { title, type: type || 'misc', amount: Number(amount), month, category, customer: customer || null, submittedById: req.user.id, fileUrl, fileName },
+    data: { title, type: type || 'misc', amount: Number(amount), month, category, customer: customer || null, submittedById: req.user.id, fileUrl: fileUrl || null, fileName: fileName || null },
   })
   const admins = await db.user.findMany({ where: { role: 'admin', isActive: true }, select: { id: true } })
   if (admins.length) {

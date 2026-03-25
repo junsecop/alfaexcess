@@ -18,25 +18,49 @@ function SubmitBill({ onSubmitted }) {
   const [form, setForm] = useState({ title: '', type: 'misc', amount: '', month: new Date().toISOString().slice(0, 7), category: '' })
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [msg, setMsg] = useState('')
 
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setMsg('')
+    setUploadProgress('')
     try {
-      const fd = new FormData()
-      Object.entries(form).forEach(([k, v]) => fd.append(k, v))
-      if (file) fd.append('file', file)
-      const r = await api.post('/billing', fd)
+      let fileUrl = null, fileName = null
+
+      if (file) {
+        // 1. Get signed upload URL from backend
+        setUploadProgress('Getting upload URL…')
+        const { data: { signedUrl, publicUrl } } = await api.post('/billing/upload-url', {
+          fileName: file.name,
+          contentType: file.type,
+        })
+
+        // 2. Upload directly to Supabase (fast — bypasses Vercel)
+        setUploadProgress('Uploading file…')
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+        if (!uploadRes.ok) throw new Error('File upload failed')
+        fileUrl = publicUrl
+        fileName = file.name
+      }
+
+      // 3. Save metadata to DB
+      setUploadProgress('Saving…')
+      const r = await api.post('/billing', { ...form, fileUrl, fileName })
       onSubmitted(r.data)
       setMsg('Bill submitted successfully!')
       setForm({ title: '', type: 'misc', amount: '', month: new Date().toISOString().slice(0, 7), category: '' })
       setFile(null)
-    } catch (e) {
-      setMsg(e.response?.data?.message || 'Failed')
+    } catch (err) {
+      setMsg(err.response?.data?.message || err.message || 'Failed')
     } finally {
       setLoading(false)
+      setUploadProgress('')
     }
   }
 
@@ -81,11 +105,12 @@ function SubmitBill({ onSubmitted }) {
             <p className="text-sm text-black/40">{file ? file.name : 'Click to attach receipt or invoice'}</p>
           </div>
         </div>
+        {uploadProgress && <p className="text-xs text-[#684df4] px-3 py-2 rounded-lg bg-[#684df4]/5">{uploadProgress}</p>}
         {msg && <p className={`text-sm px-3 py-2 rounded-lg ${msg.includes('fail') || msg.includes('Failed') ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-700'}`}>{msg}</p>}
         <button type="submit" disabled={loading}
           className="px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
           style={{ background: '#684df4' }}>
-          {loading ? 'Submitting…' : 'Submit Bill'}
+          {loading ? (uploadProgress || 'Submitting…') : 'Submit Bill'}
         </button>
       </form>
     </div>
