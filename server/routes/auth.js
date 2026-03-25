@@ -72,12 +72,14 @@ router.get('/users', protect, async (req, res) => {
 // Create user — admin/manager only
 router.post('/create-user', protect, requireRole('admin'), async (req, res) => {
   const { name, email, password, role, department, phone } = req.body
-  if (!name || !email || !password) return res.status(400).json({ message: 'Name, email and password are required' })
-  const exists = await prisma.user.findUnique({ where: { email } })
-  if (exists) return res.status(400).json({ message: 'Email already in use' })
+  if (!name || !password) return res.status(400).json({ message: 'Name and password are required' })
+  if (email) {
+    const exists = await prisma.user.findUnique({ where: { email } })
+    if (exists) return res.status(400).json({ message: 'Email already in use' })
+  }
   const hashed = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
-    data: { name, email, password: hashed, role: role || 'staff', department: department || null, phone: phone || null },
+    data: { name, email: email || null, password: hashed, role: role || 'staff', department: department || null, phone: phone || null },
   })
   res.status(201).json({ user: safeUser(user) })
 })

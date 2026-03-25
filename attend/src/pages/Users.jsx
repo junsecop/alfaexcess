@@ -175,8 +175,8 @@ export default function Users() {
                     value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-black/50 mb-1 block">Email *</label>
-                  <input required type="email" className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                  <label className="text-xs font-medium text-black/50 mb-1 block">Email (optional)</label>
+                  <input type="email" className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
                     value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 {!editing && (
