@@ -4,8 +4,8 @@ import cookieParser from 'cookie-parser'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import multer from 'multer'
-import { v4 as uuidv4 } from 'uuid'
 import path from 'path'
+import { v4 as uuidv4 } from 'uuid'
 import db, { sb } from './lib/db.js'
 
 const app = express()
@@ -21,18 +21,29 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 
 
 // ─── Helpers ───────────────────────────────────────────────
 const isProd = process.env.NODE_ENV === 'production'
+const IST = 'Asia/Kolkata'
+const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: IST })
+const today  = () => new Date().toLocaleDateString('en-CA', { timeZone: IST })
+
 const signTokens = (id) => ({
-  accessToken: jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '8h' }),
+  accessToken:  jwt.sign({ id }, process.env.JWT_SECRET,         { expiresIn: '8h' }),
   refreshToken: jwt.sign({ id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' }),
 })
 const setCookies = (res, at, rt) => {
-  res.cookie('accessToken', at, { httpOnly: true, secure: isProd, maxAge: 8 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
+  res.cookie('accessToken',  at, { httpOnly: true, secure: isProd, maxAge: 8 * 60 * 60 * 1000,     sameSite: isProd ? 'none' : 'lax' })
   res.cookie('refreshToken', rt, { httpOnly: true, secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
 }
-const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department })
-const pad = (n) => String(n).padStart(2, '0')
-const timeNow = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}` }
-const today = () => new Date().toISOString().slice(0, 10)
+const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone })
+
+const uploadToStorage = async (file, folder) => {
+  const ext = path.extname(file.originalname)
+  const storedName = `${uuidv4()}${ext}`
+  const filePath = `${folder}/${storedName}`
+  const { error } = await sb.storage.from('uploads').upload(filePath, file.buffer, { contentType: file.mimetype })
+  if (error) throw new Error(error.message)
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  return { storedName, publicUrl, filePath }
+}
 
 // ─── Auth Middleware ────────────────────────────────────────
 const protect = async (req, res, next) => {
@@ -55,17 +66,6 @@ const requireRole = (...roles) => (req, res, next) => {
   next()
 }
 
-// ─── Upload to Supabase Storage ─────────────────────────────
-const uploadToStorage = async (file, folder) => {
-  const ext = path.extname(file.originalname)
-  const storedName = `${uuidv4()}${ext}`
-  const filePath = `${folder}/${storedName}`
-  const { error } = await sb.storage.from('uploads').upload(filePath, file.buffer, { contentType: file.mimetype })
-  if (error) throw new Error(error.message)
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
-  return { storedName, publicUrl, filePath }
-}
-
 // ══════════════════════════════════════════════════════════════
 // AUTH ROUTES
 // ══════════════════════════════════════════════════════════════
@@ -73,13 +73,12 @@ const uploadToStorage = async (file, folder) => {
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
   const identifier = email?.trim()
-  if (!identifier) return res.status(400).json({ message: 'Name or email is required' })
-  // Try email first, then name
+  if (!identifier || !password) return res.status(400).json({ message: 'Name/email and password are required' })
   let user = identifier.includes('@')
     ? await db.user.findUnique({ where: { email: identifier } })
     : null
   if (!user) user = await db.user.findFirst({ where: { name: identifier } })
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' })
+  if (!user || !user.isActive) return res.status(401).json({ message: 'Invalid credentials' })
   const match = await bcrypt.compare(password, user.password)
   if (!match) return res.status(401).json({ message: 'Invalid credentials' })
   const { accessToken, refreshToken } = signTokens(user.id)
@@ -111,10 +110,12 @@ app.post('/api/auth/logout', protect, async (req, res) => {
 
 app.get('/api/auth/me', protect, (req, res) => res.json({ user: req.user }))
 
+// List users — ?includeInactive=true shows deactivated (admin/manager only)
 app.get('/api/auth/users', protect, async (req, res) => {
+  const showAll = req.query.includeInactive === 'true' && ['admin', 'manager'].includes(req.user.role)
   const users = await db.user.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true },
+    where: showAll ? {} : { isActive: true },
+    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true },
   })
   res.json(users)
 })
@@ -139,7 +140,7 @@ app.put('/api/auth/users/:id', protect, requireRole('admin'), async (req, res) =
     where: { id: req.params.id },
     data: {
       ...(name && { name }),
-      ...(email && { email }),
+      ...(email !== undefined && { email: email || null }),
       ...(role && { role }),
       ...(department !== undefined && { department }),
       ...(phone !== undefined && { phone }),
@@ -149,18 +150,78 @@ app.put('/api/auth/users/:id', protect, requireRole('admin'), async (req, res) =
   res.json({ user: safeUser(user) })
 })
 
+// Delete — ?permanent=true cascades all user data
 app.delete('/api/auth/users/:id', protect, requireRole('admin'), async (req, res) => {
-  if (req.params.id === req.user.id) return res.status(400).json({ message: 'Cannot deactivate yourself' })
-  await db.user.update({ where: { id: req.params.id }, data: { isActive: false } })
+  const { id } = req.params
+  if (id === req.user.id) return res.status(400).json({ message: 'Cannot delete yourself' })
+  if (req.query.permanent === 'true') {
+    await Promise.all([
+      db.attendance.updateMany({ where: { approvedById: id }, data: { approvedById: null } }),
+      db.bill.updateMany({ where: { approvedById: id }, data: { approvedById: null } }),
+    ])
+    await Promise.all([
+      db.attendance.deleteMany({ where: { userId: id } }),
+      db.notification.deleteMany({ where: { recipientId: id } }),
+      db.bill.deleteMany({ where: { submittedById: id } }),
+      db.task.deleteMany({ where: { assignedToId: id } }),
+      db.task.deleteMany({ where: { assignedById: id } }),
+      db.upload.deleteMany({ where: { uploadedById: id } }),
+    ])
+    await db.user.delete({ where: { id } })
+    return res.json({ message: 'User and all data permanently deleted' })
+  }
+  await db.user.update({ where: { id }, data: { isActive: false, refreshToken: null } })
   res.json({ message: 'User deactivated' })
 })
 
+// Admin reset any user password
 app.put('/api/auth/users/:id/password', protect, requireRole('admin'), async (req, res) => {
   const { password } = req.body
   if (!password || password.length < 6) return res.status(400).json({ message: 'Password must be at least 6 characters' })
   const hashed = await bcrypt.hash(password, 10)
   await db.user.update({ where: { id: req.params.id }, data: { password: hashed, refreshToken: null } })
   res.json({ message: 'Password updated' })
+})
+
+// Update own profile
+app.patch('/api/auth/profile', protect, async (req, res) => {
+  const { name, email, phone, department } = req.body
+  const user = await db.user.update({
+    where: { id: req.user.id },
+    data: {
+      ...(name && { name }),
+      ...(email !== undefined && { email: email || null }),
+      ...(phone !== undefined && { phone: phone || null }),
+      ...(department !== undefined && { department: department || null }),
+    },
+  })
+  res.json({ user: safeUser(user) })
+})
+
+// Change own password
+app.patch('/api/auth/password', protect, async (req, res) => {
+  const { current, next } = req.body
+  if (!current || !next) return res.status(400).json({ message: 'Current and new password required' })
+  if (next.length < 6) return res.status(400).json({ message: 'Min 6 characters' })
+  const user = await db.user.findUnique({ where: { id: req.user.id } })
+  const match = await bcrypt.compare(current, user.password)
+  if (!match) return res.status(401).json({ message: 'Current password is incorrect' })
+  const hashed = await bcrypt.hash(next, 10)
+  await db.user.update({ where: { id: req.user.id }, data: { password: hashed } })
+  res.json({ message: 'Password changed successfully' })
+})
+
+// Upload avatar
+const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+app.post('/api/auth/avatar', protect, avatarUpload.single('avatar'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file provided' })
+  const ext = path.extname(req.file.originalname)
+  const filePath = `avatars/${req.user.id}${ext}`
+  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true })
+  if (error) return res.status(500).json({ message: error.message })
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const user = await db.user.update({ where: { id: req.user.id }, data: { avatar: publicUrl } })
+  res.json({ user: safeUser(user) })
 })
 
 // ══════════════════════════════════════════════════════════════
@@ -170,11 +231,45 @@ app.put('/api/auth/users/:id/password', protect, requireRole('admin'), async (re
 app.post('/api/attendance/checkin', protect, async (req, res) => {
   const existing = await db.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
   if (existing) return res.status(400).json({ message: 'Already checked in today' })
-  const now = new Date()
-  const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30)
+
+  // Late check — IST 24h
+  const istTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
+  const [h, m] = istTime.split(':').map(Number)
+  const isLate = h > 9 || (h === 9 && m > 30)
+
+  const { latitude, longitude, locationName, broadcastMessage } = req.body
+  const isAdmin = req.user.role === 'admin'
+  const status = isAdmin ? 'visit' : (isLate ? 'late' : 'present')
+  const checkInTime = timeNow()
+
   const record = await db.attendance.create({
-    data: { userId: req.user.id, date: today(), checkIn: timeNow(), status: isLate ? 'late' : 'present' },
+    data: {
+      userId: req.user.id,
+      date: today(),
+      checkIn: checkInTime,
+      status,
+      ...(latitude  != null && { latitude:  parseFloat(latitude) }),
+      ...(longitude != null && { longitude: parseFloat(longitude) }),
+      ...(locationName      && { locationName }),
+    },
   })
+
+  // Admin: notify all active users
+  if (isAdmin) {
+    const allUsers = await db.user.findMany({ where: { isActive: true } })
+    const visitNote = `${req.user.name} is in the office at ${checkInTime}${locationName ? ` · ${locationName}` : ''}`
+    await Promise.all(allUsers.map(u =>
+      db.notification.create({
+        data: {
+          recipientId: u.id,
+          type: 'attendance',
+          title: broadcastMessage ? `📢 ${req.user.name}` : 'Admin Visit',
+          message: broadcastMessage || visitNote,
+        },
+      })
+    ))
+  }
+
   res.status(201).json(record)
 })
 
@@ -208,7 +303,7 @@ app.get('/api/attendance/all', protect, requireRole('admin', 'manager'), async (
   const { month, userId, status } = req.query
   const records = await db.attendance.findMany({
     where: {
-      ...(month && { date: { startsWith: month } }),
+      ...(month  && { date: { startsWith: month } }),
       ...(userId && { userId }),
       ...(status && { status }),
     },
@@ -218,12 +313,35 @@ app.get('/api/attendance/all', protect, requireRole('admin', 'manager'), async (
   res.json(records)
 })
 
+// Edit a record — admin/manager
+app.patch('/api/attendance/:id', protect, requireRole('admin', 'manager'), async (req, res) => {
+  const { checkIn, checkOut, status, note } = req.body
+  const record = await db.attendance.update({
+    where: { id: req.params.id },
+    data: {
+      ...(checkIn  !== undefined && { checkIn }),
+      ...(checkOut !== undefined && { checkOut }),
+      ...(status   && { status }),
+      ...(note     !== undefined && { note }),
+    },
+  })
+  res.json(record)
+})
+
+// Mark attendance for any staff (create or update)
 app.post('/api/attendance/mark', protect, requireRole('admin', 'manager'), async (req, res) => {
-  const { userId, date, status, note } = req.body
+  const { userId, date, status, note, checkIn, checkOut } = req.body
+  if (!userId || !date || !status) return res.status(400).json({ message: 'userId, date and status are required' })
   const record = await db.attendance.upsert({
     where: { userId_date: { userId, date } },
-    update: { status, note, approvedById: req.user.id },
-    create: { userId, date, status, note, approvedById: req.user.id },
+    update: {
+      status,
+      ...(note     !== undefined && { note }),
+      ...(checkIn  !== undefined && { checkIn }),
+      ...(checkOut !== undefined && { checkOut }),
+      approvedById: req.user.id,
+    },
+    create: { userId, date, status, note: note || null, checkIn: checkIn || null, checkOut: checkOut || null, approvedById: req.user.id },
   })
   res.json(record)
 })
@@ -315,10 +433,10 @@ app.delete('/api/billing/:id', protect, async (req, res) => {
 
 app.post('/api/uploads', protect, requireRole('admin', 'manager'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' })
-  const { tag, month, docType } = req.body
+  const { tag, month, docType, amount } = req.body
   const { storedName, publicUrl } = await uploadToStorage(req.file, 'docs')
   const doc = await db.upload.create({
-    data: { originalName: req.file.originalname, storedName, fileUrl: publicUrl, fileType: req.file.mimetype, fileSize: req.file.size, tag: tag || null, month: month || null, docType: docType || 'other', uploadedById: req.user.id },
+    data: { originalName: req.file.originalname, storedName, fileUrl: publicUrl, fileType: req.file.mimetype, fileSize: req.file.size, tag: tag || null, month: month || null, docType: docType || 'other', amount: amount ? Number(amount) : null, uploadedById: req.user.id },
   })
   res.status(201).json(doc)
 })
@@ -416,7 +534,7 @@ app.patch('/api/tasks/:id/status', protect, async (req, res) => {
   const task = await db.task.findUnique({ where: { id: req.params.id } })
   if (!task) return res.status(404).json({ message: 'Task not found' })
   const isAssignee = task.assignedToId === req.user.id
-  const isManager = ['admin', 'manager'].includes(req.user.role)
+  const isManager  = ['admin', 'manager'].includes(req.user.role)
   if (!isAssignee && !isManager) return res.status(403).json({ message: 'Access denied' })
   const updated = await db.task.update({
     where: { id: req.params.id },
@@ -453,12 +571,6 @@ app.get('/api/products', protect, async (req, res) => {
   res.json(products)
 })
 
-app.get('/api/products/:id', protect, async (req, res) => {
-  const product = await db.product.findUnique({ where: { id: req.params.id }, include: { createdBy: { select: { name: true } } } })
-  if (!product) return res.status(404).json({ message: 'Product not found' })
-  res.json(product)
-})
-
 app.post('/api/products', protect, requireRole('admin', 'manager'), upload.single('image'), async (req, res) => {
   const { name, description, price, category } = req.body
   let imageUrl = null
@@ -482,12 +594,12 @@ app.put('/api/products/:id', protect, requireRole('admin', 'manager'), upload.si
   const product = await db.product.update({
     where: { id: req.params.id },
     data: {
-      ...(name && { name }),
+      ...(name        && { name }),
       ...(description !== undefined && { description }),
-      ...(price !== undefined && { price: Number(price) }),
-      ...(category !== undefined && { category }),
-      ...(inStock !== undefined && { inStock: inStock === 'true' || inStock === true }),
-      ...(imageUrl && { imageUrl }),
+      ...(price       !== undefined && { price: Number(price) }),
+      ...(category    !== undefined && { category }),
+      ...(inStock     !== undefined && { inStock: inStock === 'true' || inStock === true }),
+      ...(imageUrl    && { imageUrl }),
     },
   })
   res.json(product)
