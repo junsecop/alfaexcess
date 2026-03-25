@@ -27,6 +27,19 @@ export default function Attendance() {
   const [editForm, setEditForm] = useState({ checkIn: '', checkOut: '', status: '', note: '' })
   const [editSaving, setEditSaving] = useState(false)
 
+  // Mark attendance modal (admin/manager)
+  const [markModal, setMarkModal] = useState(false)
+  const [markForm, setMarkForm] = useState({
+    userId: '',
+    date: new Date().toLocaleDateString('en-CA'),
+    checkIn: '',
+    checkOut: '',
+    status: 'present',
+    note: '',
+  })
+  const [markSaving, setMarkSaving] = useState(false)
+  const [markError, setMarkError] = useState('')
+
   const fetchRecords = () => {
     if (isManager) {
       const params = new URLSearchParams({ month })
@@ -52,6 +65,23 @@ export default function Attendance() {
       setSyncMsg('Sync failed')
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const handleMarkSave = async (e) => {
+    e.preventDefault()
+    if (!markForm.userId) return setMarkError('Please select a staff member')
+    setMarkSaving(true)
+    setMarkError('')
+    try {
+      const r = await api.post('/attendance/mark', markForm)
+      setMarkModal(false)
+      setMarkForm({ userId: '', date: new Date().toLocaleDateString('en-CA'), checkIn: '', checkOut: '', status: 'present', note: '' })
+      fetchRecords()
+    } catch (err) {
+      setMarkError(err.response?.data?.message || 'Failed to save')
+    } finally {
+      setMarkSaving(false)
     }
   }
 
@@ -96,10 +126,16 @@ export default function Attendance() {
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
               <button
+                onClick={() => { setMarkModal(true); setMarkError('') }}
+                className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: '#684df4' }}
+              >
+                + Mark Attendance
+              </button>
+              <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 text-white"
-                style={{ background: '#684df4' }}
+                className="px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 border border-black/15 text-black/60 hover:text-black"
               >
                 {syncing ? 'Syncing…' : 'Sync to Sheets'}
               </button>
@@ -170,6 +206,78 @@ export default function Attendance() {
           </table>
         </div>
       </div>
+
+      {/* Mark Attendance modal */}
+      {markModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Mark Attendance</h3>
+            <p className="text-xs text-black/40 mb-4">Set attendance for a staff member manually</p>
+            <form onSubmit={handleMarkSave} className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Staff Member *</label>
+                <select required
+                  className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm bg-white"
+                  value={markForm.userId}
+                  onChange={e => setMarkForm(f => ({ ...f, userId: e.target.value }))}>
+                  <option value="">Select staff…</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Date *</label>
+                <input type="date" required
+                  className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                  value={markForm.date}
+                  onChange={e => setMarkForm(f => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-black/50 mb-1 block">Check In</label>
+                  <input type="time"
+                    className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                    value={markForm.checkIn}
+                    onChange={e => setMarkForm(f => ({ ...f, checkIn: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-black/50 mb-1 block">Check Out</label>
+                  <input type="time"
+                    className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                    value={markForm.checkOut}
+                    onChange={e => setMarkForm(f => ({ ...f, checkOut: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Status *</label>
+                <select required
+                  className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm bg-white"
+                  value={markForm.status}
+                  onChange={e => setMarkForm(f => ({ ...f, status: e.target.value }))}>
+                  {ALL_STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Note (optional)</label>
+                <input
+                  className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                  placeholder="e.g. Field visit, Medical leave…"
+                  value={markForm.note}
+                  onChange={e => setMarkForm(f => ({ ...f, note: e.target.value }))} />
+              </div>
+              {markError && <p className="text-sm text-red-500">{markError}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setMarkModal(false)}
+                  className="flex-1 py-2.5 rounded-lg border border-black/15 text-sm">Cancel</button>
+                <button type="submit" disabled={markSaving}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: '#684df4' }}>
+                  {markSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editModal && (

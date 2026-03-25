@@ -91,13 +91,28 @@ router.patch('/:id', protect, requireRole('admin', 'manager'), async (req, res) 
   res.json(record)
 })
 
-// Mark absence/leave (admin/manager)
+// Mark / set attendance for any staff (admin/manager)
 router.post('/mark', protect, requireRole('admin', 'manager'), async (req, res) => {
-  const { userId, date, status, note } = req.body
+  const { userId, date, status, note, checkIn, checkOut } = req.body
+  if (!userId || !date || !status) return res.status(400).json({ message: 'userId, date and status are required' })
   const record = await prisma.attendance.upsert({
     where: { userId_date: { userId, date } },
-    update: { status, note, approvedById: req.user.id },
-    create: { userId, date, status, note, approvedById: req.user.id },
+    update: {
+      status,
+      ...(note !== undefined && { note }),
+      ...(checkIn !== undefined && { checkIn }),
+      ...(checkOut !== undefined && { checkOut }),
+      approvedById: req.user.id,
+    },
+    create: {
+      userId,
+      date,
+      status,
+      note: note || null,
+      checkIn: checkIn || null,
+      checkOut: checkOut || null,
+      approvedById: req.user.id,
+    },
   })
   res.json(record)
 })
