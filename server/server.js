@@ -1,5 +1,4 @@
-import { config } from 'dotenv'
-if (process.env.NODE_ENV !== 'production') config()
+import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
