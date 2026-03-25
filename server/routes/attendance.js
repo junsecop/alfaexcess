@@ -17,7 +17,7 @@ router.post('/checkin', protect, async (req, res) => {
   const istTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
   const [istHour, istMin] = istTime.split(':').map(Number)
   const isLate = istHour > 9 || (istHour === 9 && istMin > 30)
-  const { latitude, longitude, locationName } = req.body
+  const { latitude, longitude, locationName, broadcastMessage } = req.body
   const isAdmin = req.user.role === 'admin'
   const status = isAdmin ? 'visit' : (isLate ? 'late' : 'present')
   const checkInTime = timeNow()
@@ -32,16 +32,17 @@ router.post('/checkin', protect, async (req, res) => {
       ...(locationName && { locationName }),
     },
   })
-  // If admin, notify all admins about the office visit
   if (isAdmin) {
-    const admins = await prisma.user.findMany({ where: { role: 'admin', isActive: true } })
-    await Promise.all(admins.map(a =>
+    // Notify all active users: visit log + optional broadcast message
+    const allUsers = await prisma.user.findMany({ where: { isActive: true } })
+    const visitNote = `${req.user.name} is in the office at ${checkInTime}${locationName ? ` · ${locationName}` : ''}`
+    await Promise.all(allUsers.map(u =>
       prisma.notification.create({
         data: {
-          recipientId: a.id,
+          recipientId: u.id,
           type: 'attendance',
-          title: 'Admin Office Visit',
-          message: `${req.user.name} visited the office at ${checkInTime}${locationName ? ` · ${locationName}` : ''}`,
+          title: broadcastMessage ? `📢 ${req.user.name}` : 'Admin Visit',
+          message: broadcastMessage || visitNote,
         },
       })
     ))

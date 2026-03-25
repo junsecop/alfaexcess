@@ -25,6 +25,7 @@ export default function Dashboard() {
   // Location modal state
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [locationName, setLocationName] = useState('')
+  const [broadcastMsg, setBroadcastMsg] = useState('')
   const [gpsStatus, setGpsStatus] = useState('idle') // idle | getting | got | denied
   const [coords, setCoords] = useState(null)
 
@@ -41,6 +42,7 @@ export default function Dashboard() {
   const startCheckIn = () => {
     setShowLocationModal(true)
     setLocationName('')
+    setBroadcastMsg('')
     setCoords(null)
     setGpsStatus('getting')
     if (navigator.geolocation) {
@@ -65,6 +67,7 @@ export default function Dashboard() {
       const payload = {
         ...(coords && { latitude: coords.lat, longitude: coords.lng }),
         ...(locationName.trim() && { locationName: locationName.trim() }),
+        ...(broadcastMsg.trim() && { broadcastMessage: broadcastMsg.trim() }),
       }
       const r = await api.post('/attendance/checkin', payload)
       setToday(r.data)
@@ -173,38 +176,48 @@ export default function Dashboard() {
                 {checkingIn ? (user?.role === 'admin' ? 'Logging…' : 'Checking in…') : (user?.role === 'admin' ? 'Log Visit' : 'Check In')}
               </button>
 
-              <div className="relative flex-1">
+              {user?.role === 'admin' ? (
                 <button
-                  onClick={() => setShowCheckoutMenu(v => !v)}
+                  onClick={() => handleCheckOut(false)}
                   disabled={!today?.checkIn || !!today?.checkOut || checkingOut}
-                  className="w-full py-3 rounded-xl text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5 flex items-center justify-center gap-1"
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5"
                   style={{ color: '#17184a' }}
                 >
-                  {checkingOut ? 'Checking out…' : 'Check Out'}
-                  {!today?.checkOut && today?.checkIn && (
-                    <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
+                  {checkingOut ? 'Saving…' : 'Check Out'}
                 </button>
-
-                {showCheckoutMenu && (
-                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
-                    <button onClick={() => handleCheckOut(false)}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 transition font-medium"
-                      style={{ color: '#17184a' }}>
-                      Full Day
-                      <p className="text-xs text-black/40 font-normal">Normal checkout</p>
-                    </button>
-                    <div className="border-t border-black/5" />
-                    <button onClick={() => handleCheckOut(true)}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-purple-50 transition font-medium text-purple-700">
-                      Half Day
-                      <p className="text-xs text-purple-400 font-normal">Mark as half-day leave</p>
-                    </button>
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="relative flex-1">
+                  <button
+                    onClick={() => setShowCheckoutMenu(v => !v)}
+                    disabled={!today?.checkIn || !!today?.checkOut || checkingOut}
+                    className="w-full py-3 rounded-xl text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5 flex items-center justify-center gap-1"
+                    style={{ color: '#17184a' }}
+                  >
+                    {checkingOut ? 'Checking out…' : 'Check Out'}
+                    {!today?.checkOut && today?.checkIn && (
+                      <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    )}
+                  </button>
+                  {showCheckoutMenu && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
+                      <button onClick={() => handleCheckOut(false)}
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 transition font-medium"
+                        style={{ color: '#17184a' }}>
+                        Full Day
+                        <p className="text-xs text-black/40 font-normal">Normal checkout</p>
+                      </button>
+                      <div className="border-t border-black/5" />
+                      <button onClick={() => handleCheckOut(true)}
+                        className="w-full text-left px-4 py-3 text-sm hover:bg-purple-50 transition font-medium text-purple-700">
+                        Half Day
+                        <p className="text-xs text-purple-400 font-normal">Mark as half-day leave</p>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -268,17 +281,34 @@ export default function Dashboard() {
             </div>
 
             {/* Location label */}
-            <div className="mb-4">
-              <label className="text-xs font-medium text-black/50 mb-1 block">Location label (optional)</label>
+            <div className="mb-3">
+              <label className="text-xs font-medium text-black/50 mb-1 block">Location (optional)</label>
               <input
                 type="text"
-                placeholder="e.g. Office, Home, Site B…"
+                placeholder="e.g. Office, Site B, Home…"
                 className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#684df4]/30"
                 value={locationName}
                 onChange={e => setLocationName(e.target.value)}
                 autoFocus
               />
             </div>
+
+            {/* Broadcast message — admin only */}
+            {user?.role === 'admin' && (
+              <div className="mb-4">
+                <label className="text-xs font-medium text-black/50 mb-1 block">
+                  Broadcast message (optional)
+                  <span className="ml-1 text-black/30 font-normal">— sent to all staff</span>
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Meeting at 3pm in conference room…"
+                  className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#684df4]/30 resize-none"
+                  value={broadcastMsg}
+                  onChange={e => setBroadcastMsg(e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="flex gap-3">
               <button
@@ -292,7 +322,7 @@ export default function Dashboard() {
                 className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
                 style={{ background: '#684df4' }}
               >
-                Confirm Check In
+                {user?.role === 'admin' ? 'Log Visit' : 'Confirm Check In'}
               </button>
             </div>
           </div>
