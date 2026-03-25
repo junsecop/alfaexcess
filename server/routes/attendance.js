@@ -7,7 +7,7 @@ const router = express.Router()
 
 const pad = (n) => String(n).padStart(2, '0')
 const IST = 'Asia/Kolkata'
-const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
+const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: IST })
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: IST })
 
 // Check in
