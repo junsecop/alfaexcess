@@ -283,6 +283,30 @@ export default function Users() {
               {editing ? 'Edit User' : 'Add User'}
             </h2>
             <form onSubmit={handleSave} className="space-y-4">
+              {/* Role selector */}
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-2 block">Role *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'staff', icon: '👤', label: 'Staff', desc: 'Attendance tracking only' },
+                    { value: 'manager', icon: '👥', label: 'Manager', desc: 'Admin access + attendance' },
+                    { value: 'admin', icon: '⚡', label: 'Admin', desc: 'Full access, visit log' },
+                  ].map(r => (
+                    <button key={r.value} type="button"
+                      onClick={() => setForm(f => ({ ...f, role: r.value }))}
+                      className={`p-3 rounded-xl border-2 text-left transition ${
+                        form.role === r.value
+                          ? 'border-[#684df4] bg-[#684df4]/5'
+                          : 'border-black/10 hover:border-black/20 bg-white'
+                      }`}>
+                      <span className="text-xl block mb-1">{r.icon}</span>
+                      <p className="text-xs font-semibold" style={{ color: form.role === r.value ? '#684df4' : '#17184a' }}>{r.label}</p>
+                      <p className="text-xs text-black/40 mt-0.5 leading-tight">{r.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-black/50 mb-1 block">Name *</label>
@@ -302,20 +326,11 @@ export default function Users() {
                   </div>
                 )}
                 <div>
-                  <label className="text-xs font-medium text-black/50 mb-1 block">Role</label>
-                  <select className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm bg-white"
-                    value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-                    <option value="staff">Staff</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div>
                   <label className="text-xs font-medium text-black/50 mb-1 block">Department</label>
                   <input className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
                     value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="text-xs font-medium text-black/50 mb-1 block">Phone</label>
                   <input className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
                     value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />

@@ -18,17 +18,34 @@ router.post('/checkin', protect, async (req, res) => {
   const [istHour, istMin] = istTime.split(':').map(Number)
   const isLate = istHour > 9 || (istHour === 9 && istMin > 30)
   const { latitude, longitude, locationName } = req.body
+  const isAdmin = req.user.role === 'admin'
+  const status = isAdmin ? 'visit' : (isLate ? 'late' : 'present')
+  const checkInTime = timeNow()
   const record = await prisma.attendance.create({
     data: {
       userId: req.user.id,
       date: today(),
-      checkIn: timeNow(),
-      status: isLate ? 'late' : 'present',
+      checkIn: checkInTime,
+      status,
       ...(latitude != null && { latitude: parseFloat(latitude) }),
       ...(longitude != null && { longitude: parseFloat(longitude) }),
       ...(locationName && { locationName }),
     },
   })
+  // If admin, notify all admins about the office visit
+  if (isAdmin) {
+    const admins = await prisma.user.findMany({ where: { role: 'admin', isActive: true } })
+    await Promise.all(admins.map(a =>
+      prisma.notification.create({
+        data: {
+          recipientId: a.id,
+          type: 'attendance',
+          title: 'Admin Office Visit',
+          message: `${req.user.name} visited the office at ${checkInTime}${locationName ? ` · ${locationName}` : ''}`,
+        },
+      })
+    ))
+  }
   res.status(201).json(record)
 })
 

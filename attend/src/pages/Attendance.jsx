@@ -9,8 +9,9 @@ const STATUS_COLORS = {
   absent:   'bg-red-100 text-red-700',
   leave:    'bg-blue-100 text-blue-700',
   half_day: 'bg-purple-100 text-purple-700',
+  visit:    'bg-teal-100 text-teal-700',
 }
-const ALL_STATUSES = ['present', 'late', 'absent', 'leave', 'half_day']
+const ALL_STATUSES = ['present', 'late', 'absent', 'leave', 'half_day', 'visit']
 
 export default function Attendance() {
   const { user } = useAuth()
@@ -85,6 +86,24 @@ export default function Attendance() {
     }
   }
 
+  const downloadCSV = () => {
+    const headers = isManager
+      ? ['Name', 'Department', 'Date', 'Check In', 'Check Out', 'Status', 'Location', 'Note']
+      : ['Date', 'Check In', 'Check Out', 'Status', 'Location', 'Note']
+    const rows = records.map(r => isManager
+      ? [r.user?.name || '', r.user?.department || '', r.date, r.checkIn || '', r.checkOut || '', r.status?.replace('_', ' ') || '', r.locationName || '', r.note || '']
+      : [r.date, r.checkIn || '', r.checkOut || '', r.status?.replace('_', ' ') || '', r.locationName || '', r.note || '']
+    )
+    const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `attendance-${month}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const openEdit = (r) => {
     setEditModal(r)
     setEditForm({ checkIn: r.checkIn || '', checkOut: r.checkOut || '', status: r.status || 'present', note: r.note || '' })
@@ -115,6 +134,13 @@ export default function Attendance() {
             onChange={e => setMonth(e.target.value)}
             className="px-3 py-2 rounded-lg border border-black/15 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#684df4]/30"
           />
+          <button
+            onClick={downloadCSV}
+            disabled={records.length === 0}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border border-black/15 text-black/60 hover:text-black disabled:opacity-30 transition flex items-center gap-1.5"
+          >
+            ↓ Download CSV
+          </button>
           {isManager && (
             <>
               <select

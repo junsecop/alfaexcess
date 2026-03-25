@@ -27,7 +27,7 @@ DROP TYPE IF EXISTS "NotifType" CASCADE;
 -- ============================================================
 
 CREATE TYPE "Role" AS ENUM ('admin', 'manager', 'staff', 'customer');
-CREATE TYPE "AttendanceStatus" AS ENUM ('present', 'late', 'absent', 'leave', 'half_day');
+CREATE TYPE "AttendanceStatus" AS ENUM ('present', 'late', 'absent', 'leave', 'half_day', 'visit');
 CREATE TYPE "TaskPriority" AS ENUM ('low', 'medium', 'high', 'urgent');
 CREATE TYPE "TaskStatus" AS ENUM ('pending', 'in_progress', 'done', 'cancelled');
 CREATE TYPE "BillType" AS ENUM ('electricity', 'water', 'rent', 'salary', 'misc', 'customer');

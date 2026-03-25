@@ -101,6 +101,7 @@ export default function Dashboard() {
     half_day: 'bg-purple-100 text-purple-700',
     absent: 'bg-red-100 text-red-700',
     leave: 'bg-blue-100 text-blue-700',
+    visit: 'bg-teal-100 text-teal-700',
   }
 
   return (
@@ -125,7 +126,9 @@ export default function Dashboard() {
         {/* Attendance card */}
         {['admin', 'manager', 'staff'].includes(user?.role) && (
           <div className="bg-white rounded-2xl p-5 border border-black/8">
-            <p className="text-xs font-semibold uppercase tracking-wide text-black/40 mb-4">Today's Attendance</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-black/40 mb-4">
+              {user?.role === 'admin' ? "Today's Visit Log" : "Today's Attendance"}
+            </p>
 
             {today?.checkIn ? (
               <div className="flex flex-wrap gap-4 mb-4">
@@ -167,7 +170,7 @@ export default function Dashboard() {
                 className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-40 transition text-white"
                 style={{ background: '#684df4' }}
               >
-                {checkingIn ? 'Checking in…' : 'Check In'}
+                {checkingIn ? (user?.role === 'admin' ? 'Logging…' : 'Checking in…') : (user?.role === 'admin' ? 'Log Visit' : 'Check In')}
               </button>
 
               <div className="relative flex-1">
@@ -245,8 +248,12 @@ export default function Dashboard() {
       {showLocationModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Check In</h3>
-            <p className="text-xs text-black/40 mb-4">Add your location for today's attendance</p>
+            <h3 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>
+              {user?.role === 'admin' ? 'Log Office Visit' : 'Check In'}
+            </h3>
+            <p className="text-xs text-black/40 mb-4">
+              {user?.role === 'admin' ? 'Log your visit — no attendance required' : 'Add your location for today\'s attendance'}
+            </p>
 
             {/* GPS status */}
             <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl mb-4 text-xs font-medium ${
