@@ -6,15 +6,17 @@ import { syncAttendanceToSheet } from '../utils/sheets.js'
 const router = express.Router()
 
 const pad = (n) => String(n).padStart(2, '0')
-const timeNow = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}` }
-const today = () => new Date().toISOString().slice(0, 10)
+const IST = 'Asia/Kolkata'
+const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
+const today = () => new Date().toLocaleDateString('en-CA', { timeZone: IST }) // en-CA gives YYYY-MM-DD
 
 // Check in
 router.post('/checkin', protect, async (req, res) => {
   const existing = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
   if (existing) return res.status(400).json({ message: 'Already checked in today' })
-  const now = new Date()
-  const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 30)
+  const istTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
+  const [istHour, istMin] = istTime.split(':').map(Number)
+  const isLate = istHour > 9 || (istHour === 9 && istMin > 30)
   const record = await prisma.attendance.create({
     data: { userId: req.user.id, date: today(), checkIn: timeNow(), status: isLate ? 'late' : 'present' },
   })
