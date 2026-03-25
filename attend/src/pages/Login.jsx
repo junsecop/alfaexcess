@@ -29,7 +29,7 @@ export default function Login() {
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: '#17184a' }}>
         <div>
-          <img src="/logo.png" alt="Alfanex" className="h-10 object-contain" />
+          <div className="text-xl font-bold font-serif" style={{ color: '#c8f04a' }}>Alfanex Solutions</div>
         </div>
         <div>
           <div className="w-12 h-1 rounded-full mb-6" style={{ background: '#684df4' }} />
@@ -46,9 +46,9 @@ export default function Login() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          {/* Mobile logo */}
-          <div className="lg:hidden mb-8 text-center">
-            <img src="/logo.png" alt="Alfanex" className="h-10 object-contain mx-auto" />
+          {/* Logo — shown on all screens */}
+          <div className="mb-8 text-center">
+            <img src="/logo.png" alt="Alfanex Solutions" className="h-14 object-contain mx-auto" />
           </div>
 
           <h1 className="font-serif text-3xl font-medium mb-1" style={{ color: '#17184a' }}>Sign in</h1>
