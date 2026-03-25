@@ -170,6 +170,33 @@ export default function Attendance() {
         </div>
         {syncMsg && <p className="text-sm text-green-600">{syncMsg}</p>}
 
+        {/* Summary cards */}
+        {records.length > 0 && (() => {
+          const counts = records.reduce((acc, r) => { acc[r.status] = (acc[r.status] || 0) + 1; return acc }, {})
+          const cards = [
+            { label: 'Present',  key: 'present',  color: '#16a34a' },
+            { label: 'Late',     key: 'late',      color: '#d97706' },
+            { label: 'Absent',   key: 'absent',    color: '#dc2626' },
+            { label: 'Leave',    key: 'leave',      color: '#2563eb' },
+            { label: 'Half Day', key: 'half_day',  color: '#7c3aed' },
+          ]
+          const working = (counts.present || 0) + (counts.late || 0) + (counts.half_day || 0)
+          return (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              <div className="bg-white rounded-2xl p-4 border border-black/8 sm:col-span-1 col-span-3">
+                <p className="text-xs text-black/40 mb-1">Working Days</p>
+                <p className="text-2xl font-bold font-serif" style={{ color: '#17184a' }}>{working}</p>
+              </div>
+              {cards.map(c => (
+                <div key={c.key} className="bg-white rounded-2xl p-4 border border-black/8">
+                  <p className="text-xs text-black/40 mb-1">{c.label}</p>
+                  <p className="text-2xl font-bold font-serif" style={{ color: c.color }}>{counts[c.key] || 0}</p>
+                </div>
+              ))}
+            </div>
+          )
+        })()}
+
         {/* Table */}
         <div className="bg-white rounded-2xl border border-black/8 overflow-x-auto">
           <table className="w-full text-sm">
