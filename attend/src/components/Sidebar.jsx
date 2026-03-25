@@ -12,7 +12,7 @@ const navItems = [
   { to: '/settings',     label: 'Settings',     icon: '⚙', roles: ['admin','manager','staff','customer'] },
 ]
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, onClose, isMobile }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -23,24 +23,38 @@ export default function Sidebar({ collapsed, onToggle }) {
     navigate('/login')
   }
 
+  const handleNavClick = () => {
+    if (isMobile && onClose) onClose()
+  }
+
   return (
     <aside
       style={{ background: '#111318', minHeight: '100vh' }}
       className={`flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'} shrink-0`}
     >
-      {/* Logo */}
+      {/* Logo + toggle */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
-        <span className="text-[#c8f04a] text-xl font-bold leading-none">A</span>
+        <span className="text-[#c8f04a] text-xl font-bold leading-none shrink-0">A</span>
         {!collapsed && (
           <span className="text-white font-semibold text-sm tracking-wide truncate">Alfanex</span>
         )}
-        <button
-          onClick={onToggle}
-          className="ml-auto text-white/40 hover:text-white text-xs"
-          aria-label="Toggle sidebar"
-        >
-          {collapsed ? '»' : '«'}
-        </button>
+        {isMobile ? (
+          <button
+            onClick={onClose}
+            className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg text-white/60 hover:text-white hover:bg-white/10 text-lg"
+            aria-label="Close sidebar"
+          >
+            ✕
+          </button>
+        ) : (
+          <button
+            onClick={onToggle}
+            className="ml-auto w-9 h-9 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/10 text-base font-bold"
+            aria-label="Toggle sidebar"
+          >
+            {collapsed ? '»' : '«'}
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -50,6 +64,7 @@ export default function Sidebar({ collapsed, onToggle }) {
             key={item.to}
             to={item.to}
             end={item.to === '/'}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
                ${isActive
@@ -66,11 +81,19 @@ export default function Sidebar({ collapsed, onToggle }) {
       {/* User */}
       <div className="p-3 border-t border-white/10">
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 rounded-full bg-[#c8f04a] flex items-center justify-center shrink-0">
-            <span className="text-[#111318] text-xs font-bold">
-              {user?.name?.[0]?.toUpperCase() || '?'}
-            </span>
-          </div>
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name}
+              className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/20"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-full bg-[#c8f04a] flex items-center justify-center shrink-0">
+              <span className="text-[#111318] text-xs font-bold">
+                {user?.name?.[0]?.toUpperCase() || '?'}
+              </span>
+            </div>
+          )}
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-white text-xs font-medium truncate">{user?.name}</p>

@@ -8,7 +8,7 @@ const router = express.Router()
 const pad = (n) => String(n).padStart(2, '0')
 const IST = 'Asia/Kolkata'
 const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
-const today = () => new Date().toLocaleDateString('en-CA', { timeZone: IST }) // en-CA gives YYYY-MM-DD
+const today = () => new Date().toLocaleDateString('en-CA', { timeZone: IST })
 
 // Check in
 router.post('/checkin', protect, async (req, res) => {
@@ -17,13 +17,22 @@ router.post('/checkin', protect, async (req, res) => {
   const istTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: IST })
   const [istHour, istMin] = istTime.split(':').map(Number)
   const isLate = istHour > 9 || (istHour === 9 && istMin > 30)
+  const { latitude, longitude, locationName } = req.body
   const record = await prisma.attendance.create({
-    data: { userId: req.user.id, date: today(), checkIn: timeNow(), status: isLate ? 'late' : 'present' },
+    data: {
+      userId: req.user.id,
+      date: today(),
+      checkIn: timeNow(),
+      status: isLate ? 'late' : 'present',
+      ...(latitude != null && { latitude: parseFloat(latitude) }),
+      ...(longitude != null && { longitude: parseFloat(longitude) }),
+      ...(locationName && { locationName }),
+    },
   })
   res.status(201).json(record)
 })
 
-// Check out — { halfDay: true } marks as half_day
+// Check out
 router.post('/checkout', protect, async (req, res) => {
   const { halfDay } = req.body
   const record = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
@@ -67,6 +76,21 @@ router.get('/all', protect, requireRole('admin', 'manager'), async (req, res) =>
   res.json(records)
 })
 
+// Admin/manager edit a record (check-in time, check-out, status, note)
+router.patch('/:id', protect, requireRole('admin', 'manager'), async (req, res) => {
+  const { checkIn, checkOut, status, note } = req.body
+  const record = await prisma.attendance.update({
+    where: { id: req.params.id },
+    data: {
+      ...(checkIn !== undefined && { checkIn }),
+      ...(checkOut !== undefined && { checkOut }),
+      ...(status && { status }),
+      ...(note !== undefined && { note }),
+    },
+  })
+  res.json(record)
+})
+
 // Mark absence/leave (admin/manager)
 router.post('/mark', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { userId, date, status, note } = req.body
@@ -78,7 +102,7 @@ router.post('/mark', protect, requireRole('admin', 'manager'), async (req, res) 
   res.json(record)
 })
 
-// Sync to Sheets (admin/manager)
+// Sync to Sheets
 router.post('/sync', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month } = req.body
   const records = await prisma.attendance.findMany({

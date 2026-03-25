@@ -22,6 +22,12 @@ export default function Dashboard() {
   const [showCheckoutMenu, setShowCheckoutMenu] = useState(false)
   const [msg, setMsg] = useState('')
 
+  // Location modal state
+  const [showLocationModal, setShowLocationModal] = useState(false)
+  const [locationName, setLocationName] = useState('')
+  const [gpsStatus, setGpsStatus] = useState('idle') // idle | getting | got | denied
+  const [coords, setCoords] = useState(null)
+
   const month = new Date().toISOString().slice(0, 7)
 
   useEffect(() => {
@@ -31,11 +37,36 @@ export default function Dashboard() {
     }
   }, [user?.role, month])
 
+  // Start location modal — get GPS in background
+  const startCheckIn = () => {
+    setShowLocationModal(true)
+    setLocationName('')
+    setCoords(null)
+    setGpsStatus('getting')
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setGpsStatus('got')
+        },
+        () => setGpsStatus('denied'),
+        { timeout: 8000 }
+      )
+    } else {
+      setGpsStatus('denied')
+    }
+  }
+
   const handleCheckIn = async () => {
     setCheckingIn(true)
     setMsg('')
+    setShowLocationModal(false)
     try {
-      const r = await api.post('/attendance/checkin')
+      const payload = {
+        ...(coords && { latitude: coords.lat, longitude: coords.lng }),
+        ...(locationName.trim() && { locationName: locationName.trim() }),
+      }
+      const r = await api.post('/attendance/checkin', payload)
       setToday(r.data)
       setMsg('Checked in successfully')
     } catch (e) {
@@ -101,13 +132,16 @@ export default function Dashboard() {
                 <div className="bg-black/3 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
                   <p className="text-xs text-black/40 mb-1">Check In</p>
                   <p className="text-lg font-semibold" style={{ color: '#17184a' }}>{today.checkIn}</p>
+                  {today.locationName && (
+                    <p className="text-xs text-black/40 mt-0.5">📍 {today.locationName}</p>
+                  )}
                 </div>
-                {today.checkOut ? (
+                {today.checkOut && (
                   <div className="bg-black/3 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
                     <p className="text-xs text-black/40 mb-1">Check Out</p>
                     <p className="text-lg font-semibold" style={{ color: '#17184a' }}>{today.checkOut}</p>
                   </div>
-                ) : null}
+                )}
                 <div className="flex items-center">
                   <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${statusStyle[today.status] || 'bg-gray-100'}`}>
                     {today.status?.replace('_', ' ')}
@@ -128,7 +162,7 @@ export default function Dashboard() {
             {/* Buttons */}
             <div className="flex gap-3">
               <button
-                onClick={handleCheckIn}
+                onClick={startCheckIn}
                 disabled={!!today?.checkIn || checkingIn}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-40 transition text-white"
                 style={{ background: '#684df4' }}
@@ -153,19 +187,15 @@ export default function Dashboard() {
 
                 {showCheckoutMenu && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
-                    <button
-                      onClick={() => handleCheckOut(false)}
+                    <button onClick={() => handleCheckOut(false)}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 transition font-medium"
-                      style={{ color: '#17184a' }}
-                    >
+                      style={{ color: '#17184a' }}>
                       Full Day
                       <p className="text-xs text-black/40 font-normal">Normal checkout</p>
                     </button>
                     <div className="border-t border-black/5" />
-                    <button
-                      onClick={() => handleCheckOut(true)}
-                      className="w-full text-left px-4 py-3 text-sm hover:bg-purple-50 transition font-medium text-purple-700"
-                    >
+                    <button onClick={() => handleCheckOut(true)}
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-purple-50 transition font-medium text-purple-700">
                       Half Day
                       <p className="text-xs text-purple-400 font-normal">Mark as half-day leave</p>
                     </button>
@@ -176,7 +206,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Stats (admin/manager) */}
+        {/* Stats */}
         {stats && (
           <div>
             <p className="text-xs text-black/40 font-semibold uppercase tracking-wide mb-3">
@@ -191,7 +221,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Quick links (mobile friendly) */}
+        {/* Quick links */}
         <div>
           <p className="text-xs text-black/40 font-semibold uppercase tracking-wide mb-3">Quick Access</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -210,6 +240,57 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Location check-in modal */}
+      {showLocationModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Check In</h3>
+            <p className="text-xs text-black/40 mb-4">Add your location for today's attendance</p>
+
+            {/* GPS status */}
+            <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl mb-4 text-xs font-medium ${
+              gpsStatus === 'got' ? 'bg-green-50 text-green-700' :
+              gpsStatus === 'denied' ? 'bg-orange-50 text-orange-600' :
+              'bg-black/5 text-black/50'
+            }`}>
+              <span>{gpsStatus === 'got' ? '📍' : gpsStatus === 'denied' ? '📍' : '⏳'}</span>
+              {gpsStatus === 'getting' && 'Getting GPS location…'}
+              {gpsStatus === 'got' && `GPS captured (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`}
+              {gpsStatus === 'denied' && 'GPS not available — you can still check in'}
+            </div>
+
+            {/* Location label */}
+            <div className="mb-4">
+              <label className="text-xs font-medium text-black/50 mb-1 block">Location label (optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. Office, Home, Site B…"
+                className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#684df4]/30"
+                value={locationName}
+                onChange={e => setLocationName(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowLocationModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-black/15 text-sm text-black/50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckIn}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
+                style={{ background: '#684df4' }}
+              >
+                Confirm Check In
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

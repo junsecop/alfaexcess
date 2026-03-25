@@ -3,6 +3,9 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import prisma from '../config/db.js'
 import { protect, requireRole } from '../middleware/auth.js'
+import multer from 'multer'
+import path from 'path'
+import { createClient } from '@supabase/supabase-js'
 
 const router = express.Router()
 
@@ -17,7 +20,7 @@ const setCookies = (res, accessToken, refreshToken) => {
   res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
 }
 
-const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department })
+const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone })
 
 // Login (by name or email)
 router.post('/login', async (req, res) => {
@@ -149,6 +152,52 @@ router.put('/users/:id/password', protect, requireRole('admin'), async (req, res
   const hashed = await bcrypt.hash(password, 10)
   await prisma.user.update({ where: { id: req.params.id }, data: { password: hashed, refreshToken: null } })
   res.json({ message: 'Password updated' })
+})
+
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+const avatarUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+
+// Update own profile
+router.patch('/profile', protect, async (req, res) => {
+  const { name, email, phone, department } = req.body
+  const user = await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      ...(name && { name }),
+      ...(email !== undefined && { email: email || null }),
+      ...(phone !== undefined && { phone: phone || null }),
+      ...(department !== undefined && { department: department || null }),
+    },
+  })
+  res.json({ user: safeUser(user) })
+})
+
+// Change own password
+router.patch('/password', protect, async (req, res) => {
+  const { current, next } = req.body
+  if (!current || !next) return res.status(400).json({ message: 'Current and new password required' })
+  if (next.length < 6) return res.status(400).json({ message: 'Min 6 characters' })
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } })
+  const match = await bcrypt.compare(current, user.password)
+  if (!match) return res.status(401).json({ message: 'Current password is incorrect' })
+  const hashed = await bcrypt.hash(next, 10)
+  await prisma.user.update({ where: { id: req.user.id }, data: { password: hashed } })
+  res.json({ message: 'Password changed successfully' })
+})
+
+// Upload avatar
+router.post('/avatar', protect, avatarUpload.single('avatar'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file provided' })
+  const ext = path.extname(req.file.originalname)
+  const filePath = `avatars/${req.user.id}${ext}`
+  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, {
+    contentType: req.file.mimetype,
+    upsert: true,
+  })
+  if (error) return res.status(500).json({ message: error.message })
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatar: publicUrl } })
+  res.json({ user: safeUser(user) })
 })
 
 export default router
