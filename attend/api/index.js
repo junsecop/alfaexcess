@@ -353,6 +353,14 @@ app.get('/api/attendance/stats', protect, requireRole('admin', 'manager'), async
   res.json(stats)
 })
 
+// Delete attendance record (admin only)
+app.delete('/api/attendance/:id', protect, requireRole('admin'), async (req, res) => {
+  const record = await db.attendance.findUnique({ where: { id: req.params.id } })
+  if (!record) return res.status(404).json({ message: 'Record not found' })
+  await db.attendance.delete({ where: { id: req.params.id } })
+  res.json({ message: 'Deleted' })
+})
+
 // ══════════════════════════════════════════════════════════════
 // BILLING ROUTES
 // ══════════════════════════════════════════════════════════════

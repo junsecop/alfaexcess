@@ -149,6 +149,14 @@ router.post('/sync', protect, requireRole('admin', 'manager'), async (req, res) 
   res.json({ ...result, count: records.length })
 })
 
+// Delete a record (admin only)
+router.delete('/:id', protect, requireRole('admin'), async (req, res) => {
+  const record = await prisma.attendance.findUnique({ where: { id: req.params.id } })
+  if (!record) return res.status(404).json({ message: 'Record not found' })
+  await prisma.attendance.delete({ where: { id: req.params.id } })
+  res.json({ message: 'Deleted' })
+})
+
 // Stats
 router.get('/stats', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month } = req.query

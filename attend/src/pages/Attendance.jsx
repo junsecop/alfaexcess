@@ -16,6 +16,7 @@ const ALL_STATUSES = ['present', 'late', 'absent', 'leave', 'half_day', 'visit']
 export default function Attendance() {
   const { user } = useAuth()
   const isManager = ['admin', 'manager'].includes(user?.role)
+  const isAdmin = user?.role === 'admin'
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [records, setRecords] = useState([])
   const [users, setUsers] = useState([])
@@ -107,6 +108,16 @@ export default function Attendance() {
   const openEdit = (r) => {
     setEditModal(r)
     setEditForm({ checkIn: r.checkIn || '', checkOut: r.checkOut || '', status: r.status || 'present', note: r.note || '' })
+  }
+
+  const handleDelete = async (r) => {
+    if (!confirm(`Delete attendance record for ${r.user?.name || 'this user'} on ${r.date}?`)) return
+    try {
+      await api.delete(`/attendance/${r.id}`)
+      setRecords(rs => rs.filter(rec => rec.id !== r.id))
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete')
+    }
   }
 
   const handleEditSave = async (e) => {
@@ -245,12 +256,22 @@ export default function Attendance() {
                   </td>
                   {isManager && (
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => openEdit(r)}
-                        className="text-xs px-2 py-1 rounded-lg border border-black/10 text-black/40 hover:text-black hover:border-black/30 transition"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(r)}
+                          className="text-xs px-2 py-1 rounded-lg border border-black/10 text-black/40 hover:text-black hover:border-black/30 transition"
+                        >
+                          Edit
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(r)}
+                            className="text-xs px-2 py-1 rounded-lg border border-red-100 text-red-400 hover:text-red-600 hover:border-red-300 transition"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
