@@ -29,7 +29,7 @@ export default function Login() {
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: '#17184a' }}>
         <div>
-          <span className="text-2xl font-bold font-serif" style={{ color: '#684df4' }}>Alfanex</span>
+          <img src="/logo.png" alt="Alfanex" className="h-10 object-contain" />
         </div>
         <div>
           <div className="w-12 h-1 rounded-full mb-6" style={{ background: '#684df4' }} />
@@ -48,7 +48,7 @@ export default function Login() {
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <span className="text-2xl font-bold font-serif" style={{ color: '#684df4' }}>Alfanex</span>
+            <img src="/logo.png" alt="Alfanex" className="h-10 object-contain mx-auto" />
           </div>
 
           <h1 className="font-serif text-3xl font-medium mb-1" style={{ color: '#17184a' }}>Sign in</h1>
