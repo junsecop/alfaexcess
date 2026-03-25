@@ -422,6 +422,21 @@ app.patch('/api/billing/:id/approve', protect, requireRole('admin', 'manager'), 
   res.json(bill)
 })
 
+// Cleanup: delete all approved/paid bills from previous months (admin only)
+app.delete('/api/billing/cleanup', protect, requireRole('admin'), async (req, res) => {
+  const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: IST }).slice(0, 7)
+  const bills = await db.bill.findMany({ where: {} })
+  const old = bills.filter(b => b.month && b.month < currentMonth && ['approved', 'paid'].includes(b.status))
+  for (const bill of old) {
+    if (bill.fileUrl) {
+      const filePath = bill.fileUrl.split('/uploads/').pop()
+      if (filePath) await sb.storage.from('uploads').remove([filePath])
+    }
+    await db.bill.delete({ where: { id: bill.id } })
+  }
+  res.json({ count: old.length })
+})
+
 app.delete('/api/billing/:id', protect, async (req, res) => {
   const bill = await db.bill.findUnique({ where: { id: req.params.id } })
   if (!bill) return res.status(404).json({ message: 'Bill not found' })

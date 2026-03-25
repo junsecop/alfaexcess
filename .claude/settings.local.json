@@ -14,7 +14,9 @@
       "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/server\")",
       "Bash(cp -r \"c:/Users/albin/Desktop/alfanex.in/attendece app/server-backup\" \"c:/Users/albin/Desktop/alfanex.in/attendece app/server\")",
       "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/server-backup\")",
-      "Bash(node --input-type=module --eval \"import ''''./index.js''''\")"
+      "Bash(node --input-type=module --eval \"import ''''./index.js''''\")",
+      "Bash(cd /c/Users/albin/Desktop/alfanex.in/attendece app/attend)",
+      "Bash(find . -maxdepth 2 -not -path */node_modules/* -type d)"
     ]
   }
 }

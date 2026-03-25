@@ -5,6 +5,9 @@ import { v4 as uuidv4 } from 'uuid'
 import prisma from '../config/db.js'
 import { protect, requireRole } from '../middleware/auth.js'
 import { syncBillsToSheet } from '../utils/sheets.js'
+import { createClient } from '@supabase/supabase-js'
+
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
 const router = express.Router()
 
@@ -14,9 +17,21 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } })
 
+// Signed upload URL for direct Supabase upload
+router.post('/upload-url', protect, async (req, res) => {
+  const { fileName } = req.body
+  if (!fileName) return res.status(400).json({ message: 'fileName required' })
+  const ext = path.extname(fileName)
+  const filePath = `bills/${uuidv4()}${ext}`
+  const { data, error } = await sb.storage.from('uploads').createSignedUploadUrl(filePath)
+  if (error) return res.status(500).json({ message: error.message })
+  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  res.json({ signedUrl: data.signedUrl, token: data.token, filePath, publicUrl })
+})
+
 // Submit a bill
-router.post('/', protect, upload.single('file'), async (req, res) => {
-  const { title, type, amount, month, category, customer } = req.body
+router.post('/', protect, async (req, res) => {
+  const { title, type, amount, month, category, customer, fileUrl, fileName } = req.body
   const bill = await prisma.bill.create({
     data: {
       title, type: type || 'misc',
@@ -24,8 +39,8 @@ router.post('/', protect, upload.single('file'), async (req, res) => {
       month, category,
       customer: customer || null,
       submittedById: req.user.id,
-      fileUrl: req.file ? `/uploads/bills/${req.file.filename}` : null,
-      fileName: req.file?.originalname || null,
+      fileUrl: fileUrl || null,
+      fileName: fileName || null,
     },
   })
   const admins = await prisma.user.findMany({ where: { role: 'admin', isActive: true }, select: { id: true } })
@@ -91,6 +106,18 @@ router.patch('/:id/approve', protect, requireRole('admin', 'manager'), async (re
     },
   })
   res.json(bill)
+})
+
+// Cleanup: delete all approved/paid bills from previous months (admin only)
+router.delete('/cleanup', protect, requireRole('admin'), async (req, res) => {
+  const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7)
+  const old = await prisma.bill.findMany({
+    where: { status: { in: ['approved', 'paid'] }, month: { lt: currentMonth } },
+  })
+  await prisma.bill.deleteMany({
+    where: { id: { in: old.map(b => b.id) } },
+  })
+  res.json({ count: old.length })
 })
 
 // Delete bill (admin or owner if pending)

@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alfanex Attendance App — Feature Presentation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --purple: #684df4;
+    --navy: #17184a;
+    --lime: #c8f04a;
+    --soft: #f7f8fc;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+  }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--soft); color: #1a1a2e; }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--navy); padding: 14px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 16px rgba(0,0,0,.25);
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--lime); }
+  .nav-brand span { color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: .5px; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a {
+    color: rgba(255,255,255,.6); text-decoration: none; font-size: .85rem;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--lime); }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #2a2b7a 100%);
+    padding: 100px 40px 80px;
+    text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(104,77,244,.3) 0%, transparent 60%);
+  }
+  .hero-badge {
+    display: inline-block; background: rgba(200,240,74,.15);
+    border: 1px solid rgba(200,240,74,.4); color: var(--lime);
+    font-size: .75rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    padding: 6px 16px; border-radius: 999px; margin-bottom: 24px;
+  }
+  .hero h1 {
+    color: #fff; font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 700; line-height: 1.2; margin-bottom: 20px; position: relative;
+  }
+  .hero h1 span { color: var(--lime); }
+  .hero p {
+    color: rgba(255,255,255,.6); font-size: 1.1rem; max-width: 560px;
+    margin: 0 auto 36px; position: relative;
+  }
+  .hero-tags { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; position: relative; }
+  .tag {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.75); font-size: .8rem; padding: 6px 14px; border-radius: 999px;
+  }
+
+  /* SECTIONS */
+  section { padding: 72px 40px; max-width: 1100px; margin: 0 auto; }
+  .section-label {
+    font-size: .75rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--purple); margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 700;
+    color: var(--navy); margin-bottom: 12px; line-height: 1.3;
+  }
+  .section-desc { color: var(--muted); font-size: .95rem; max-width: 600px; line-height: 1.7; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+  /* CARDS GRID */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 36px; }
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; transition: box-shadow .2s, transform .2s;
+  }
+  .card:hover { box-shadow: 0 8px 32px rgba(104,77,244,.12); transform: translateY(-2px); }
+  .card-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; margin-bottom: 16px;
+  }
+  .card h3 { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .card p { font-size: .85rem; color: var(--muted); line-height: 1.6; }
+
+  /* FEATURE ROWS */
+  .feature-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 48px;
+    align-items: center; margin-top: 56px;
+  }
+  .feature-row.reverse { direction: rtl; }
+  .feature-row.reverse > * { direction: ltr; }
+  .feature-content h3 { font-size: 1.3rem; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  .feature-content p { color: var(--muted); font-size: .9rem; line-height: 1.7; margin-bottom: 16px; }
+  .feature-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .feature-list li {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: .875rem; color: #374151;
+  }
+  .feature-list li::before {
+    content: '✓'; width: 20px; height: 20px; background: rgba(104,77,244,.1);
+    color: var(--purple); border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: .7rem; font-weight: 800; flex-shrink: 0;
+    line-height: 20px; text-align: center;
+  }
+  .feature-visual {
+    background: linear-gradient(135deg, var(--navy) 0%, #2a2b7a 100%);
+    border-radius: 20px; padding: 32px; min-height: 220px;
+    display: flex; flex-direction: column; justify-content: center; gap: 12px;
+  }
+
+  /* MOCK UI ELEMENTS */
+  .mock-row {
+    background: rgba(255,255,255,.08); border-radius: 10px;
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .mock-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--purple); flex-shrink: 0;
+  }
+  .mock-text { flex: 1; }
+  .mock-line { height: 8px; border-radius: 4px; background: rgba(255,255,255,.2); margin-bottom: 5px; }
+  .mock-line.short { width: 60%; }
+  .mock-badge {
+    font-size: .7rem; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+  }
+  .badge-present { background: rgba(52,211,153,.2); color: #34d399; }
+  .badge-late { background: rgba(251,191,36,.2); color: #fbbf24; }
+  .badge-visit { background: rgba(45,212,191,.2); color: #2dd4bf; }
+  .badge-absent { background: rgba(248,113,113,.2); color: #f87171; }
+  .badge-leave { background: rgba(167,139,250,.2); color: #a78bfa; }
+
+  /* ROLES */
+  .roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
+  .role-card {
+    background: #fff; border: 2px solid var(--border);
+    border-radius: 16px; padding: 24px; text-align: center;
+  }
+  .role-card.admin { border-color: var(--purple); }
+  .role-icon { font-size: 2rem; margin-bottom: 12px; }
+  .role-card h4 { font-size: .95rem; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .role-card p { font-size: .8rem; color: var(--muted); line-height: 1.6; }
+  .role-perms { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .perm {
+    font-size: .75rem; background: var(--soft); padding: 4px 8px;
+    border-radius: 6px; color: #374151; text-align: left;
+  }
+
+  /* STATUS PILLS */
+  .status-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .status-pill {
+    padding: 8px 18px; border-radius: 999px; font-size: .8rem; font-weight: 600;
+  }
+  .sp-present { background: #d1fae5; color: #065f46; }
+  .sp-late { background: #fef3c7; color: #92400e; }
+  .sp-absent { background: #fee2e2; color: #991b1b; }
+  .sp-leave { background: #ede9fe; color: #4c1d95; }
+  .sp-half { background: #fff7ed; color: #9a3412; }
+  .sp-visit { background: #ccfbf1; color: #134e4a; }
+
+  /* TECH STACK */
+  .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 32px; }
+  .tech-item {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; display: flex; align-items: center; gap: 14px;
+  }
+  .tech-logo {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+  }
+  .tech-info h4 { font-size: .875rem; font-weight: 700; color: var(--navy); }
+  .tech-info p { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+
+  /* DEPLOYMENT */
+  .deploy-box {
+    background: var(--navy); border-radius: 20px; padding: 40px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 36px;
+  }
+  .deploy-item h4 { color: var(--lime); font-size: .85rem; font-weight: 700; letter-spacing: .5px; margin-bottom: 8px; }
+  .deploy-item p { color: rgba(255,255,255,.7); font-size: .875rem; line-height: 1.6; }
+  .deploy-item code {
+    display: inline-block; background: rgba(255,255,255,.1);
+    padding: 2px 8px; border-radius: 4px; font-size: .8rem; color: rgba(255,255,255,.9);
+    font-family: 'Consolas', monospace;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--navy); padding: 48px 40px;
+    text-align: center;
+  }
+  footer .brand { color: var(--lime); font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
+  footer p { color: rgba(255,255,255,.4); font-size: .85rem; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    nav { padding: 12px 20px; }
+    .nav-links { display: none; }
+    section { padding: 48px 20px; }
+    .hero { padding: 60px 20px 48px; }
+    .feature-row { grid-template-columns: 1fr; }
+    .feature-row.reverse { direction: ltr; }
+    .roles-grid { grid-template-columns: 1fr; }
+    .deploy-box { grid-template-columns: 1fr; padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="dot"></div>
+    <span>Alfanex Solutions</span>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#roles">Roles</a>
+    <a href="#attendance">Attendance</a>
+    <a href="#billing">Billing</a>
+    <a href="#tech">Technology</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Internal Tools Platform</div>
+  <h1>Alfanex <span>Attendance</span> App</h1>
+  <p>A complete workforce management system — attendance, billing, tasks, and team management all in one place.</p>
+  <div class="hero-tags">
+    <span class="tag">GPS Check-in</span>
+    <span class="tag">Role-based Access</span>
+    <span class="tag">Bill Management</span>
+    <span class="tag">Admin Visit Log</span>
+    <span class="tag">CSV Reports</span>
+    <span class="tag">Mobile Ready</span>
+    <span class="tag">Real-time Notifications</span>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<section id="features">
+  <div class="section-label">Overview</div>
+  <div class="section-title">Everything your team needs</div>
+  <div class="section-desc">Built for Alfanex Solutions Pvt. Ltd. — handles day-to-day operations: who's in the office, billing submissions, task tracking, and team management.</div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon" style="background:#ede9fe">📍</div>
+      <h3>GPS Attendance</h3>
+      <p>Employees check in with their exact GPS coordinates. Location name is saved and admin can view a Google Maps link for every record.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#d1fae5">📢</div>
+      <h3>Admin Visit Log</h3>
+      <p>When admin checks in it's logged as a "visit" (not attendance) and all active users receive an instant notification. Optional broadcast message included.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fef3c7">🧾</div>
+      <h3>Bill Management</h3>
+      <p>Staff submit expense bills with receipts. Files upload directly to cloud storage — fast, no size limits, with progress feedback.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fee2e2">✅</div>
+      <h3>Task Tracking</h3>
+      <p>Assign tasks to team members, set due dates, track completion status, and get notified when tasks are updated.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e0f2fe">👥</div>
+      <h3>User Management</h3>
+      <p>Add staff, assign roles, deactivate accounts, or permanently delete users with full data cascade. Visual role selector with clear permissions.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f0fdf4">📊</div>
+      <h3>CSV Reports</h3>
+      <p>Download attendance records for any selected month as a CSV file. Filter by month, user, or status from the admin panel.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ROLES -->
+<section id="roles">
+  <div class="section-label">Access Control</div>
+  <div class="section-title">Three-tier role system</div>
+  <div class="section-desc">Every user has a role that controls what they can see and do. Roles are assigned by admin and shown visually during onboarding.</div>
+
+  <div class="roles-grid">
+    <div class="role-card">
+      <div class="role-icon">👤</div>
+      <h4>Staff</h4>
+      <p>Regular employee. Can check in/out, submit bills, manage tasks, and view their own attendance history.</p>
+      <div class="role-perms">
+        <div class="perm">✓ Check in / Check out</div>
+        <div class="perm">✓ Half-day checkout</div>
+        <div class="perm">✓ Submit bills</div>
+        <div class="perm">✓ View own attendance</div>
+        <div class="perm">✓ Tasks assigned to them</div>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-icon">👥</div>
+      <h4>Manager</h4>
+      <p>Has all staff permissions plus team oversight. Can view all attendance, mark/edit records, and manage billing.</p>
+      <div class="role-perms">
+        <div class="perm">✓ All staff permissions</div>
+        <div class="perm">✓ View all attendance</div>
+        <div class="perm">✓ Mark/edit staff attendance</div>
+        <div class="perm">✓ Manage all bills</div>
+        <div class="perm">✓ Export CSV reports</div>
+      </div>
+    </div>
+    <div class="role-card admin">
+      <div class="role-icon">⚡</div>
+      <h4>Admin</h4>
+      <p>Full system access. Logs visits (not attendance), broadcasts messages, manages users, and has complete system control.</p>
+      <div class="role-perms">
+        <div class="perm">✓ All manager permissions</div>
+        <div class="perm">✓ Visit log (not attendance)</div>
+        <div class="perm">✓ Broadcast messages</div>
+        <div class="perm">✓ Add / deactivate users</div>
+        <div class="perm">✓ Permanent delete with cascade</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ATTENDANCE -->
+<section id="attendance">
+  <div class="section-label">Core Feature</div>
+  <div class="section-title">Attendance tracking</div>
+  <div class="section-desc">Full lifecycle attendance management with IST timezone, GPS capture, and multiple status types.</div>
+
+  <div class="feature-row">
+    <div class="feature-content">
+      <h3>Check-in with GPS</h3>
+      <p>When a staff member checks in, the app captures their browser's GPS coordinates along with a human-readable location name. All times are displayed in IST (Asia/Kolkata) in 12-hour format.</p>
+      <ul class="feature-list">
+        <li>Browser Geolocation API captures latitude + longitude</li>
+        <li>Location name can be typed (e.g. "Office", "Client Site")</li>
+        <li>Admin sees a Google Maps link for every location</li>
+        <li>Late detection: after 9:30 AM IST = "Late" status</li>
+        <li>Half-day option available on checkout for staff/manager</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div class="mock-row">
+        <div class="mock-avatar"></div>
+        <div class="mock-text">
+          <div class="mock-line" style="width:70%"></div>
+          <div class="mock-line short"></div>
+        </div>
+        <span class="mock-badge badge-present">Present</span>
+      </div>
+      <div class="mock-row">
+        <div class="mock-avatar" style="background:#f59e0b"></div>
+        <div class="mock-text">
+          <div class="mock-line" style="width:55%"></div>
+          <div class="mock-line short"></div>
+        </div>
+        <span class="mock-badge badge-late">Late</span>
+      </div>
+      <div class="mock-row">
+        <div class="mock-avatar" style="background:#2dd4bf"></div>
+        <div class="mock-text">
+          <div class="mock-line" style="width:65%"></div>
+          <div class="mock-line short"></div>
+        </div>
+        <span class="mock-badge badge-visit">Visit</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 40px;">
+    <div class="section-desc" style="margin-bottom:16px;"><strong style="color:var(--navy)">Attendance status types:</strong></div>
+    <div class="status-grid">
+      <span class="status-pill sp-present">Present</span>
+      <span class="status-pill sp-late">Late</span>
+      <span class="status-pill sp-absent">Absent</span>
+      <span class="status-pill sp-leave">Leave</span>
+      <span class="status-pill sp-half">Half Day</span>
+      <span class="status-pill sp-visit">Visit (Admin)</span>
+    </div>
+  </div>
+
+  <div class="feature-row reverse" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Admin Visit Log</h3>
+      <p>When the admin checks in, it creates a "visit" record rather than personal attendance. All active users receive a notification immediately — admin can optionally add a broadcast message.</p>
+      <ul class="feature-list">
+        <li>Admin check-in = Visit log, not regular attendance</li>
+        <li>Instant notification sent to all active users</li>
+        <li>Optional broadcast message (e.g. announcements)</li>
+        <li>Admin checkout is simple — no half-day option</li>
+        <li>Location shown in notification message</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:8px;letter-spacing:1px">NOTIFICATION</div>
+      <div class="mock-row" style="background:rgba(104,77,244,.2);border:1px solid rgba(104,77,244,.3)">
+        <div style="font-size:1.4rem">📢</div>
+        <div class="mock-text">
+          <div style="color:#fff;font-size:.85rem;font-weight:600;margin-bottom:3px">Admin Visit</div>
+          <div style="color:rgba(255,255,255,.5);font-size:.75rem">Rajan is in the office at 10:30 AM · Head Office</div>
+        </div>
+      </div>
+      <div class="mock-row" style="margin-top:4px">
+        <div style="font-size:1.4rem">🔔</div>
+        <div class="mock-text">
+          <div class="mock-line" style="width:80%"></div>
+          <div class="mock-line short"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-row" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Admin Controls</h3>
+      <p>Managers and admins can mark, edit, or override any staff attendance record. Useful for correcting mistakes or entering attendance for staff who couldn't log in.</p>
+      <ul class="feature-list">
+        <li>Mark attendance for any staff member for any date</li>
+        <li>Set check-in and check-out times manually</li>
+        <li>Change status (present, absent, leave, etc.)</li>
+        <li>Add notes to any attendance record</li>
+        <li>Edit existing records from the attendance table</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:12px;letter-spacing:1px">MARK ATTENDANCE</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px;">
+          <div style="color:rgba(255,255,255,.4);font-size:.7rem;margin-bottom:4px">Staff</div>
+          <div style="color:#fff;font-size:.8rem">Anitha R.</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px;">
+          <div style="color:rgba(255,255,255,.4);font-size:.7rem;margin-bottom:4px">Date</div>
+          <div style="color:#fff;font-size:.8rem">2026-03-20</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px;">
+          <div style="color:rgba(255,255,255,.4);font-size:.7rem;margin-bottom:4px">Check In</div>
+          <div style="color:#fff;font-size:.8rem">09:15 AM</div>
+        </div>
+        <div style="background:rgba(255,255,255,.08);border-radius:8px;padding:10px;">
+          <div style="color:rgba(255,255,255,.4);font-size:.7rem;margin-bottom:4px">Status</div>
+          <div style="color:#34d399;font-size:.8rem">Present</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- BILLING -->
+<section id="billing">
+  <div class="section-label">Expense Management</div>
+  <div class="section-title">Fast bill submission</div>
+  <div class="section-desc">Staff submit expense bills with receipt uploads. Files go directly to cloud storage — bypassing server size limits for fast, reliable uploads.</div>
+
+  <div class="feature-row">
+    <div class="feature-content">
+      <h3>Direct Upload Architecture</h3>
+      <p>Receipt files upload directly from the browser to Supabase Cloud Storage using a signed URL. The server is never in the upload path, eliminating size limits and slow transfers.</p>
+      <ul class="feature-list">
+        <li>3-step upload: Get URL → Upload to cloud → Save metadata</li>
+        <li>Progress shown: "Getting upload URL… → Uploading file… → Saving…"</li>
+        <li>No file size limit (bypasses Vercel 4.5 MB body limit)</li>
+        <li>Receipts stored permanently in Supabase Storage</li>
+        <li>Public URL saved for instant preview/download</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:12px;letter-spacing:1px">UPLOAD FLOW</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--lime);color:#000;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0">1</div>
+          <div style="color:rgba(255,255,255,.8);font-size:.82rem">Browser requests signed URL from API</div>
+        </div>
+        <div style="width:1px;height:16px;background:rgba(255,255,255,.2);margin-left:12px"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--lime);color:#000;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0">2</div>
+          <div style="color:rgba(255,255,255,.8);font-size:.82rem">File uploads <strong style="color:var(--lime)">directly</strong> to Supabase Storage</div>
+        </div>
+        <div style="width:1px;height:16px;background:rgba(255,255,255,.2);margin-left:12px"></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--lime);color:#000;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0">3</div>
+          <div style="color:rgba(255,255,255,.8);font-size:.82rem">Public URL + metadata saved to database</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- USER MANAGEMENT -->
+<section id="users">
+  <div class="section-label">Team Management</div>
+  <div class="section-title">User lifecycle management</div>
+  <div class="section-desc">Complete control over staff accounts — from onboarding to offboarding, with safe soft-delete and full data cascade when needed.</div>
+
+  <div class="cards" style="margin-top:32px">
+    <div class="card">
+      <div class="card-icon" style="background:#ede9fe">➕</div>
+      <h3>Add Users</h3>
+      <p>Visual role selector with card-style UI showing Staff, Manager, Admin options with icons, descriptions, and permissions. Password set on creation.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fef3c7">😴</div>
+      <h3>Deactivate / Reactivate</h3>
+      <p>Soft-delete: mark a user as inactive. Their data is preserved. Admin can reactivate them at any time from the inactive users list.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fee2e2">🗑️</div>
+      <h3>Permanent Delete</h3>
+      <p>Hard delete with full cascade: attendance records, bills, tasks, uploads, and notifications are all removed. Requires confirmation before proceeding.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#d1fae5">🖼️</div>
+      <h3>Profile Management</h3>
+      <p>Users can update their own profile, change passwords, and upload a profile picture. Avatar stored in Supabase Storage.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- MOBILE -->
+<section>
+  <div class="section-label">Responsive Design</div>
+  <div class="section-title">Mobile-first interface</div>
+  <div class="section-desc">The app works seamlessly on all screen sizes. The sidebar becomes a slide-in drawer on mobile with backdrop overlay.</div>
+
+  <div class="feature-row" style="margin-top:40px">
+    <div class="feature-content">
+      <h3>Adaptive Sidebar</h3>
+      <p>On desktop the sidebar collapses to icon-only mode. On mobile it hides completely and opens as a full slide-in drawer with a tap on the hamburger button.</p>
+      <ul class="feature-list">
+        <li>Desktop: collapsible sidebar with icons + labels</li>
+        <li>Mobile: hidden by default, tap to slide open</li>
+        <li>Backdrop overlay closes drawer on tap outside</li>
+        <li>Auto-detects screen size on load and resize</li>
+        <li>Active route highlighted in sidebar</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="padding: 20px; gap: 0;">
+      <div style="display:flex;gap:12px;height:160px">
+        <!-- Mobile mockup -->
+        <div style="width:80px;background:rgba(255,255,255,.05);border-radius:12px;border:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;overflow:hidden">
+          <div style="background:var(--navy);padding:8px 6px;display:flex;justify-content:space-between;align-items:center">
+            <div style="color:rgba(255,255,255,.6);font-size:.6rem">☰</div>
+            <div style="color:rgba(255,255,255,.4);font-size:.55rem">Alfanex</div>
+          </div>
+          <div style="flex:1;padding:6px;display:flex;flex-direction:column;gap:4px">
+            <div style="height:8px;background:rgba(255,255,255,.1);border-radius:3px"></div>
+            <div style="height:8px;background:rgba(255,255,255,.1);border-radius:3px"></div>
+            <div style="height:8px;background:rgba(104,77,244,.4);border-radius:3px"></div>
+          </div>
+          <div style="padding:4px 6px;text-align:center;color:rgba(255,255,255,.3);font-size:.55rem">Mobile</div>
+        </div>
+        <!-- Desktop mockup -->
+        <div style="flex:1;background:rgba(255,255,255,.05);border-radius:12px;border:1px solid rgba(255,255,255,.1);display:flex;overflow:hidden">
+          <div style="width:40px;background:rgba(255,255,255,.05);display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:10px">
+            <div style="font-size:.9rem">🏠</div>
+            <div style="font-size:.9rem">📅</div>
+            <div style="font-size:.9rem">💰</div>
+            <div style="font-size:.9rem">✅</div>
+          </div>
+          <div style="flex:1;padding:8px;display:flex;flex-direction:column;gap:5px">
+            <div style="height:8px;background:rgba(255,255,255,.15);border-radius:3px;width:80%"></div>
+            <div style="height:8px;background:rgba(255,255,255,.08);border-radius:3px;width:60%"></div>
+            <div style="height:8px;background:rgba(255,255,255,.08);border-radius:3px;width:70%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- TECH STACK -->
+<section id="tech">
+  <div class="section-label">Technology</div>
+  <div class="section-title">Built with modern tools</div>
+  <div class="section-desc">Production-grade stack deployed entirely on Vercel with Supabase as the managed database and file storage layer.</div>
+
+  <div class="tech-grid">
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#f0fdf4">⚛️</div>
+      <div class="tech-info">
+        <h4>React + Vite</h4>
+        <p>Frontend SPA with fast HMR and optimized builds</p>
+      </div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#f5f3ff">🚂</div>
+      <div class="tech-info">
+        <h4>Express.js</h4>
+        <p>REST API running as Vercel Serverless Function</p>
+      </div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#ecfdf5">🐘</div>
+      <div class="tech-info">
+        <h4>Supabase</h4>
+        <p>PostgreSQL database + file storage (S3-compatible)</p>
+      </div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#eff6ff">🔒</div>
+      <div class="tech-info">
+        <h4>JWT + bcrypt</h4>
+        <p>Secure auth with httpOnly cookies and hashed passwords</p>
+      </div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#fefce8">🌐</div>
+      <div class="tech-info">
+        <h4>Vercel</h4>
+        <p>Frontend + API deployed, auto-deploy on push</p>
+      </div>
+    </div>
+    <div class="tech-item">
+      <div class="tech-logo" style="background:#fff7ed">🎨</div>
+      <div class="tech-info">
+        <h4>Tailwind CSS</h4>
+        <p>Utility-first styling with custom brand colors</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="deploy-box">
+    <div class="deploy-item">
+      <h4>Frontend</h4>
+      <p>React app built with Vite, deployed to Vercel CDN. Auto-deploys on every push to <code>main</code> branch.</p>
+    </div>
+    <div class="deploy-item">
+      <h4>Backend API</h4>
+      <p>Express app at <code>attend/api/index.js</code> runs as a single Vercel serverless function at <code>/api/*</code>.</p>
+    </div>
+    <div class="deploy-item">
+      <h4>Database</h4>
+      <p>Supabase PostgreSQL with custom adapter that mirrors Prisma's API. Row-level operations, no ORM overhead.</p>
+    </div>
+    <div class="deploy-item">
+      <h4>File Storage</h4>
+      <p>Supabase Storage bucket <code>uploads/</code>. Files are uploaded directly from the browser via signed URLs — no Vercel size limits.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- SUMMARY TABLE -->
+<section>
+  <div class="section-label">Summary</div>
+  <div class="section-title">Feature checklist</div>
+  <div style="margin-top:32px;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:16px;overflow:hidden;border:1px solid var(--border)">
+      <thead>
+        <tr style="background:var(--navy)">
+          <th style="padding:14px 20px;text-align:left;color:var(--lime);font-size:.8rem;font-weight:700;letter-spacing:.5px">FEATURE</th>
+          <th style="padding:14px 20px;text-align:left;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:700;letter-spacing:.5px">STAFF</th>
+          <th style="padding:14px 20px;text-align:left;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:700;letter-spacing:.5px">MANAGER</th>
+          <th style="padding:14px 20px;text-align:left;color:rgba(255,255,255,.6);font-size:.8rem;font-weight:700;letter-spacing:.5px">ADMIN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">GPS Check-in / Check-out</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#2dd4bf;font-size:.8rem">Visit only</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Half-day checkout</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">View own attendance</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">View all staff attendance</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Mark / edit staff attendance</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Download CSV report</td>
+          <td style="padding:13px 20px;color:#34d399">✓ (own)</td>
+          <td style="padding:13px 20px;color:#34d399">✓ (all)</td>
+          <td style="padding:13px 20px;color:#34d399">✓ (all)</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Submit bills</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Manage all bills</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Broadcast message / admin visit</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Add / manage users</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr>
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Permanent delete with cascade</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="brand">Alfanex Solutions Pvt. Ltd.</div>
+  <p style="margin-top:8px">Internal Workforce Management Platform &nbsp;·&nbsp; Built on React, Express, Supabase, Vercel</p>
+  <p style="margin-top:6px">© 2026 Alfanex Solutions. All rights reserved.</p>
+</footer>
+
+</body>
+</html>

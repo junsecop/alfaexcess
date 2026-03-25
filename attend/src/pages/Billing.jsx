@@ -30,6 +30,11 @@ function SubmitBill({ onSubmitted }) {
       let fileUrl = null, fileName = null
 
       if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+          setMsg('File too large — maximum size is 5 MB')
+          setLoading(false)
+          return
+        }
         // 1. Get signed upload URL from backend
         setUploadProgress('Getting upload URL…')
         const { data: { signedUrl, publicUrl } } = await api.post('/billing/upload-url', {
@@ -103,6 +108,7 @@ function SubmitBill({ onSubmitted }) {
             onClick={() => document.getElementById('bill-file').click()}>
             <input type="file" className="hidden" id="bill-file" onChange={e => setFile(e.target.files[0])} />
             <p className="text-sm text-black/40">{file ? file.name : 'Click to attach receipt or invoice'}</p>
+            {!file && <p className="text-xs text-black/30 mt-1">Max 5 MB · PDF, image, Excel</p>}
           </div>
         </div>
         {uploadProgress && <p className="text-xs text-[#684df4] px-3 py-2 rounded-lg bg-[#684df4]/5">{uploadProgress}</p>}
@@ -242,7 +248,7 @@ function Documents() {
             onClick={() => document.getElementById('doc-upload').click()}>
             <input type="file" id="doc-upload" className="hidden" onChange={e => setFile(e.target.files[0])} />
             <p className="text-sm text-black/40">{file ? file.name : 'Click to select file'}</p>
-            <p className="text-xs text-black/30 mt-1">PDF, images, Excel — max 20MB</p>
+            <p className="text-xs text-black/30 mt-1">PDF, images, Excel — max 5 MB</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -316,6 +322,21 @@ export default function Billing() {
   const [myBills, setMyBills] = useState([])
   const [summary, setSummary] = useState(null)
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
+  const [cleaning, setCleaning] = useState(false)
+
+  const cleanupOldBills = async () => {
+    if (!confirm('Delete all approved/paid bills from previous months? This cannot be undone.')) return
+    setCleaning(true)
+    try {
+      const r = await api.delete('/billing/cleanup')
+      alert(`Deleted ${r.data.count} old bill(s).`)
+      fetchAll()
+    } catch (e) {
+      alert(e.response?.data?.message || 'Cleanup failed')
+    } finally {
+      setCleaning(false)
+    }
+  }
 
   const fetchAll = () => {
     if (isManager) {
@@ -345,11 +366,17 @@ export default function Billing() {
     <Layout title="Billing">
       <div className="max-w-5xl mx-auto space-y-5">
 
-        {/* Month picker */}
-        <div className="flex items-center gap-3">
+        {/* Month picker + cleanup */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <input type="month" value={month} onChange={e => setMonth(e.target.value)}
             className="px-3 py-2 rounded-xl border border-black/15 text-sm bg-white focus:outline-none focus:ring-2"
             style={{ '--tw-ring-color': '#684df4' }} />
+          {user?.role === 'admin' && (
+            <button onClick={cleanupOldBills} disabled={cleaning}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+              {cleaning ? 'Cleaning…' : 'Cleanup Old Bills'}
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
