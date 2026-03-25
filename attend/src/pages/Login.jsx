@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,7 +15,7 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
+      await login(identifier, password)
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed')
@@ -25,16 +25,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#f7f6f2' }}>
+    <div className="min-h-screen flex" style={{ background: '#f7f8fc' }}>
       {/* Left panel */}
-      <div
-        className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12"
-        style={{ background: '#111318' }}
-      >
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12" style={{ background: '#17184a' }}>
         <div>
-          <span className="text-[#c8f04a] text-2xl font-bold font-serif">Alfanex</span>
+          <span className="text-2xl font-bold font-serif" style={{ color: '#684df4' }}>Alfanex</span>
         </div>
         <div>
+          <div className="w-12 h-1 rounded-full mb-6" style={{ background: '#684df4' }} />
           <h2 className="text-white font-serif text-4xl font-medium leading-tight mb-4">
             Manage your team,<br />track every day.
           </h2>
@@ -46,45 +44,57 @@ export default function Login() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <h1 className="font-serif text-3xl font-medium text-[#111318] mb-2">Sign in</h1>
-          <p className="text-sm text-black/50 mb-8">Enter your credentials to continue</p>
+          {/* Mobile logo */}
+          <div className="lg:hidden mb-8 text-center">
+            <span className="text-2xl font-bold font-serif" style={{ color: '#684df4' }}>Alfanex</span>
+          </div>
+
+          <h1 className="font-serif text-3xl font-medium mb-1" style={{ color: '#17184a' }}>Sign in</h1>
+          <p className="text-sm text-black/40 mb-8">Use your name or email to continue</p>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
+            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#111318] mb-1.5">Email</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#17184a' }}>
+                Name or Email
+              </label>
               <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
+                type="text"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-black/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#c8f04a] focus:border-transparent"
-                placeholder="you@alfanex.in"
+                className="w-full px-4 py-3 rounded-xl border border-black/15 bg-white text-sm focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': '#684df4' }}
+                placeholder="Your name or email"
+                autoComplete="username"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#111318] mb-1.5">Password</label>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: '#17184a' }}>
+                Password
+              </label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-black/15 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#c8f04a] focus:border-transparent"
+                className="w-full px-4 py-3 rounded-xl border border-black/15 bg-white text-sm focus:outline-none focus:ring-2"
                 placeholder="••••••••"
+                autoComplete="current-password"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-lg font-semibold text-sm transition-opacity"
-              style={{ background: '#c8f04a', color: '#111318' }}
+              className="w-full py-3 rounded-xl font-semibold text-sm transition-opacity disabled:opacity-60 text-white mt-2"
+              style={{ background: '#684df4' }}
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>

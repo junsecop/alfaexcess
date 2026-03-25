@@ -72,7 +72,13 @@ const uploadToStorage = async (file, folder) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
-  const user = await db.user.findUnique({ where: { email } })
+  const identifier = email?.trim()
+  if (!identifier) return res.status(400).json({ message: 'Name or email is required' })
+  // Try email first, then name
+  let user = identifier.includes('@')
+    ? await db.user.findUnique({ where: { email: identifier } })
+    : null
+  if (!user) user = await db.user.findFirst({ where: { name: identifier } })
   if (!user) return res.status(401).json({ message: 'Invalid credentials' })
   const match = await bcrypt.compare(password, user.password)
   if (!match) return res.status(401).json({ message: 'Invalid credentials' })

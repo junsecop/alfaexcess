@@ -7,7 +7,6 @@ const navItems = [
   { to: '/work-log',     label: 'Work Log',     icon: '⚑', roles: ['admin','manager','staff'] },
   { to: '/billing',      label: 'Billing',      icon: '₹', roles: ['admin','manager','staff','customer'] },
   { to: '/users',        label: 'Users',        icon: '👤', roles: ['admin','manager'] },
-  { to: '/data-uploads', label: 'Data Uploads', icon: '↑', roles: ['admin','manager'] },
   { to: '/products',     label: 'Products',     icon: '◈', roles: ['admin','manager','staff','customer'] },
   { to: '/notifications',label: 'Notifications',icon: '🔔', roles: ['admin','manager','staff','customer'] },
   { to: '/settings',     label: 'Settings',     icon: '⚙', roles: ['admin','manager','staff','customer'] },

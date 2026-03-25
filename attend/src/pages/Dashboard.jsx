@@ -3,15 +3,12 @@ import Layout from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
-function StatCard({ label, value, sub, accent }) {
+function StatCard({ label, value, sub, color }) {
   return (
-    <div className="bg-white rounded-2xl p-5 border border-black/8">
-      <p className="text-xs text-black/40 font-medium uppercase tracking-wide mb-3">{label}</p>
-      <p className="font-serif text-3xl font-medium text-[#111318]">{value}</p>
-      {sub && <p className="text-xs text-black/40 mt-1">{sub}</p>}
-      {accent && (
-        <div className="mt-3 h-1 w-12 rounded-full" style={{ background: '#c8f04a' }} />
-      )}
+    <div className="bg-white rounded-2xl p-4 border border-black/8 flex flex-col gap-1">
+      <p className="text-xs text-black/40 font-medium uppercase tracking-wide">{label}</p>
+      <p className="font-serif text-3xl font-semibold" style={{ color: color || '#17184a' }}>{value}</p>
+      {sub && <p className="text-xs text-black/30">{sub}</p>}
     </div>
   )
 }
@@ -67,70 +64,86 @@ export default function Dashboard() {
   const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
   const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
 
+  const statusStyle = {
+    present: 'bg-green-100 text-green-700',
+    late: 'bg-yellow-100 text-yellow-700',
+    half_day: 'bg-purple-100 text-purple-700',
+    absent: 'bg-red-100 text-red-700',
+    leave: 'bg-blue-100 text-blue-700',
+  }
+
   return (
     <Layout title="Dashboard">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Welcome */}
-        <div className="flex items-start justify-between">
+      <div className="max-w-5xl mx-auto space-y-4 md:space-y-6">
+
+        {/* Welcome bar */}
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-serif text-2xl font-medium text-[#111318]">
-              Good {now.getHours() < 12 ? 'morning' : now.getHours() < 17 ? 'afternoon' : 'evening'},{' '}
-              {user?.name?.split(' ')[0]}
+            <h2 className="font-serif text-xl md:text-2xl font-medium" style={{ color: '#17184a' }}>
+              {now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening'},{' '}
+              <span>{user?.name?.split(' ')[0]}</span>
             </h2>
-            <p className="text-sm text-black/40 mt-0.5">{dateStr} · {timeStr}</p>
+            <p className="text-xs text-black/40 mt-0.5">{dateStr} · {timeStr}</p>
           </div>
-          <span className="px-3 py-1 rounded-full text-xs font-semibold capitalize"
-            style={{ background: '#c8f04a', color: '#111318' }}>
+          <span className="px-3 py-1 rounded-full text-xs font-semibold capitalize text-white shrink-0"
+            style={{ background: '#684df4' }}>
             {user?.role}
           </span>
         </div>
 
-        {/* Check in/out card */}
+        {/* Attendance card */}
         {['admin', 'manager', 'staff'].includes(user?.role) && (
-          <div className="bg-white rounded-2xl p-6 border border-black/8 flex items-center justify-between gap-6">
-            <div>
-              <p className="text-sm font-medium text-[#111318] mb-1">Today's Attendance</p>
-              {today?.checkIn ? (
-                <div className="space-y-1">
-                  <p className="text-xs text-black/50">
-                    Check-in: <span className="font-semibold text-[#111318]">{today.checkIn}</span>
-                    {today.checkOut && (
-                      <> &nbsp;·&nbsp; Check-out: <span className="font-semibold text-[#111318]">{today.checkOut}</span></>
-                    )}
-                  </p>
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium capitalize
-                    ${today.status === 'present' ? 'bg-green-100 text-green-700'
-                    : today.status === 'late' ? 'bg-yellow-100 text-yellow-700'
-                    : today.status === 'half-day' ? 'bg-purple-100 text-purple-700'
-                    : 'bg-red-100 text-red-700'}`}>
-                    {today.status}
+          <div className="bg-white rounded-2xl p-5 border border-black/8">
+            <p className="text-xs font-semibold uppercase tracking-wide text-black/40 mb-4">Today's Attendance</p>
+
+            {today?.checkIn ? (
+              <div className="flex flex-wrap gap-4 mb-4">
+                <div className="bg-black/3 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
+                  <p className="text-xs text-black/40 mb-1">Check In</p>
+                  <p className="text-lg font-semibold" style={{ color: '#17184a' }}>{today.checkIn}</p>
+                </div>
+                {today.checkOut ? (
+                  <div className="bg-black/3 rounded-xl px-4 py-3 flex-1 min-w-[120px]">
+                    <p className="text-xs text-black/40 mb-1">Check Out</p>
+                    <p className="text-lg font-semibold" style={{ color: '#17184a' }}>{today.checkOut}</p>
+                  </div>
+                ) : null}
+                <div className="flex items-center">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${statusStyle[today.status] || 'bg-gray-100'}`}>
+                    {today.status?.replace('_', ' ')}
                   </span>
                 </div>
-              ) : (
-                <p className="text-xs text-black/40">Not checked in yet</p>
-              )}
-              {msg && <p className="text-xs mt-2 font-medium" style={{ color: '#c8f04a' }}>{msg}</p>}
-            </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 mb-4 p-4 rounded-xl" style={{ background: '#684df4' + '10' }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: '#684df4' }} />
+                <p className="text-sm text-black/50">Not checked in yet</p>
+              </div>
+            )}
 
-            <div className="flex gap-3 items-center">
-              {/* Check In */}
+            {msg && (
+              <p className="text-xs font-medium mb-3 px-3 py-2 rounded-lg bg-green-50 text-green-700">{msg}</p>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-3">
               <button
                 onClick={handleCheckIn}
                 disabled={!!today?.checkIn || checkingIn}
-                className="px-5 py-2 rounded-lg text-sm font-semibold disabled:opacity-40 transition"
-                style={{ background: '#c8f04a', color: '#111318' }}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold disabled:opacity-40 transition text-white"
+                style={{ background: '#684df4' }}
               >
-                {checkingIn ? '…' : 'Check In'}
+                {checkingIn ? 'Checking in…' : 'Check In'}
               </button>
 
-              {/* Check Out — dropdown with Full Day / Half Day */}
-              <div className="relative">
+              <div className="relative flex-1">
                 <button
                   onClick={() => setShowCheckoutMenu(v => !v)}
                   disabled={!today?.checkIn || !!today?.checkOut || checkingOut}
-                  className="px-5 py-2 rounded-lg text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5 flex items-center gap-1"
+                  className="w-full py-3 rounded-xl text-sm font-semibold border border-black/15 disabled:opacity-40 transition hover:bg-black/5 flex items-center justify-center gap-1"
+                  style={{ color: '#17184a' }}
                 >
-                  {checkingOut ? '…' : 'Check Out'}
+                  {checkingOut ? 'Checking out…' : 'Check Out'}
                   {!today?.checkOut && today?.checkIn && (
                     <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -139,10 +152,11 @@ export default function Dashboard() {
                 </button>
 
                 {showCheckoutMenu && (
-                  <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-black/10 shadow-lg z-10 overflow-hidden">
                     <button
                       onClick={() => handleCheckOut(false)}
                       className="w-full text-left px-4 py-3 text-sm hover:bg-black/5 transition font-medium"
+                      style={{ color: '#17184a' }}
                     >
                       Full Day
                       <p className="text-xs text-black/40 font-normal">Normal checkout</p>
@@ -165,17 +179,36 @@ export default function Dashboard() {
         {/* Stats (admin/manager) */}
         {stats && (
           <div>
-            <p className="text-xs text-black/40 font-medium uppercase tracking-wide mb-3">
+            <p className="text-xs text-black/40 font-semibold uppercase tracking-wide mb-3">
               This month — {month}
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Present" value={stats.present || 0} accent />
-              <StatCard label="Late" value={stats.late || 0} />
-              <StatCard label="Absent" value={stats.absent || 0} />
-              <StatCard label="Leave" value={(stats.leave || 0) + (stats['half-day'] || 0)} sub="incl. half-day" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <StatCard label="Present" value={stats.present || 0} color="#684df4" />
+              <StatCard label="Late" value={stats.late || 0} color="#f59e0b" />
+              <StatCard label="Absent" value={stats.absent || 0} color="#ef4444" />
+              <StatCard label="Leave" value={(stats.leave || 0) + (stats.half_day || 0)} sub="incl. half-day" color="#3b82f6" />
             </div>
           </div>
         )}
+
+        {/* Quick links (mobile friendly) */}
+        <div>
+          <p className="text-xs text-black/40 font-semibold uppercase tracking-wide mb-3">Quick Access</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'Attendance', icon: '📅', href: '/attendance' },
+              { label: 'Billing', icon: '₹', href: '/billing' },
+              { label: 'Work Log', icon: '✓', href: '/work-log' },
+              { label: 'Notifications', icon: '🔔', href: '/notifications' },
+            ].map(q => (
+              <a key={q.label} href={q.href}
+                className="bg-white rounded-2xl p-4 border border-black/8 flex flex-col items-center gap-2 hover:shadow-sm transition-shadow">
+                <span className="text-2xl">{q.icon}</span>
+                <span className="text-xs font-medium text-black/60">{q.label}</span>
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </Layout>
   )
