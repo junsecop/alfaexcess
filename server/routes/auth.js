@@ -69,11 +69,12 @@ router.get('/me', protect, (req, res) => {
   res.json({ user: req.user })
 })
 
-// List users (all staff visible to admin/manager)
+// List users — admin/manager sees all; ?includeInactive=true shows deactivated too
 router.get('/users', protect, async (req, res) => {
+  const showAll = req.query.includeInactive === 'true' && ['admin', 'manager'].includes(req.user.role)
   const users = await prisma.user.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true },
+    where: showAll ? {} : { isActive: true },
+    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true },
   })
   res.json(users)
 })

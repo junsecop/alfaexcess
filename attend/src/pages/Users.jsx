@@ -7,23 +7,33 @@ const EMPTY = { name: '', email: '', password: '', role: 'staff', department: ''
 export default function Users() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showInactive, setShowInactive] = useState(false)
+
+  // Create/edit modal
   const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing] = useState(null) // null = create, user obj = edit
+  const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [pwModal, setPwModal] = useState(null) // user obj for password reset
+
+  // Password modal
+  const [pwModal, setPwModal] = useState(null)
   const [newPw, setNewPw] = useState('')
   const [pwSaving, setPwSaving] = useState(false)
   const [pwError, setPwError] = useState('')
   const [pwSuccess, setPwSuccess] = useState('')
 
+  // Delete modal
+  const [deleteModal, setDeleteModal] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   const load = () => {
     setLoading(true)
-    api.get('/auth/users').then(r => setUsers(r.data)).finally(() => setLoading(false))
+    const url = showInactive ? '/auth/users?includeInactive=true' : '/auth/users'
+    api.get(url).then(r => setUsers(r.data)).finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [showInactive])
 
   const openCreate = () => {
     setEditing(null)
@@ -34,7 +44,7 @@ export default function Users() {
 
   const openEdit = (u) => {
     setEditing(u)
-    setForm({ name: u.name, email: u.email, password: '', role: u.role, department: u.department || '', phone: u.phone || '' })
+    setForm({ name: u.name, email: u.email || '', password: '', role: u.role, department: u.department || '', phone: u.phone || '' })
     setError('')
     setShowModal(true)
   }
@@ -45,8 +55,7 @@ export default function Users() {
     setError('')
     try {
       if (editing) {
-        const payload = { name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone }
-        await api.put(`/auth/users/${editing.id}`, payload)
+        await api.put(`/auth/users/${editing.id}`, { name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone })
       } else {
         await api.post('/auth/create-user', form)
       }
@@ -82,10 +91,16 @@ export default function Users() {
     }
   }
 
-  const [deleteModal, setDeleteModal] = useState(null) // user to delete
-  const [deleteLoading, setDeleteLoading] = useState(false)
+  const handleReactivate = async (u) => {
+    try {
+      await api.put(`/auth/users/${u.id}`, { isActive: true })
+      load()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to reactivate')
+    }
+  }
 
-  const handleDeactivate = async (permanent = false) => {
+  const handleDelete = async (permanent = false) => {
     const u = deleteModal
     if (!u) return
     setDeleteLoading(true)
@@ -107,76 +122,166 @@ export default function Users() {
     return { background: '#f0f0f0', color: '#555' }
   }
 
+  const active = users.filter(u => u.isActive !== false)
+  const inactive = users.filter(u => u.isActive === false)
+
   return (
     <Layout title="Users">
-      <div className="flex justify-between items-center mb-6">
-        <p className="text-sm text-black/40">{users.length} active user{users.length !== 1 ? 's' : ''}</p>
-        <button
-          onClick={openCreate}
-          className="px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{ background: '#c8f04a', color: '#111318' }}
-        >
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-black/40">{active.length} active user{active.length !== 1 ? 's' : ''}</p>
+          {inactive.length > 0 && (
+            <button
+              onClick={() => setShowInactive(v => !v)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                showInactive
+                  ? 'bg-red-50 text-red-600 border-red-200'
+                  : 'bg-black/5 text-black/40 border-black/10 hover:text-black'
+              }`}
+            >
+              {showInactive ? '✕ Hide deactivated' : `${inactive.length} deactivated`}
+            </button>
+          )}
+          {inactive.length === 0 && showInactive && (
+            <button onClick={() => setShowInactive(false)} className="text-xs text-black/30 hover:text-black">
+              Hide inactive
+            </button>
+          )}
+        </div>
+        <button onClick={openCreate} className="px-4 py-2 rounded-lg text-sm font-semibold"
+          style={{ background: '#c8f04a', color: '#111318' }}>
           + Add User
         </button>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-7 h-7 border-4 border-[#c8f04a] border-t-transparent rounded-full animate-spin" />
+          <div className="w-7 h-7 border-4 border-[#684df4] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-black/8 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-black/8 text-black/40 text-xs uppercase tracking-wide">
-                <th className="text-left px-5 py-3 font-medium">Name</th>
-                <th className="text-left px-5 py-3 font-medium">Email</th>
-                <th className="text-left px-5 py-3 font-medium">Role</th>
-                <th className="text-left px-5 py-3 font-medium">Department</th>
-                <th className="text-left px-5 py-3 font-medium">Phone</th>
-                <th className="px-5 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u.id} className="border-b border-black/5 last:border-0 hover:bg-black/2">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                        style={{ background: '#c8f04a', color: '#111318' }}>
-                        {u.name[0].toUpperCase()}
-                      </div>
-                      <span className="font-medium text-[#111318]">{u.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-black/60">{u.email}</td>
-                  <td className="px-5 py-3">
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold capitalize" style={roleColor(u.role)}>
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-black/60">{u.department || '—'}</td>
-                  <td className="px-5 py-3 text-black/60">{u.phone || '—'}</td>
-                  <td className="px-5 py-3 text-right">
-                    <button onClick={() => openEdit(u)} className="text-xs text-black/40 hover:text-black mr-3">Edit</button>
-                    <button onClick={() => openPwModal(u)} className="text-xs text-black/40 hover:text-black mr-3">Password</button>
-                    <button onClick={() => setDeleteModal(u)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
-                  </td>
+        <div className="space-y-6">
+          {/* Active users */}
+          <div className="bg-white rounded-2xl border border-black/8 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-black/8 text-black/40 text-xs uppercase tracking-wide">
+                  <th className="text-left px-5 py-3 font-medium">Name</th>
+                  <th className="text-left px-5 py-3 font-medium hidden sm:table-cell">Email</th>
+                  <th className="text-left px-5 py-3 font-medium">Role</th>
+                  <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Department</th>
+                  <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Phone</th>
+                  <th className="px-5 py-3" />
                 </tr>
-              ))}
-              {users.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-12 text-center text-black/30">No users found</td></tr>
+              </thead>
+              <tbody>
+                {active.map(u => (
+                  <tr key={u.id} className="border-b border-black/5 last:border-0 hover:bg-black/2">
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                          style={{ background: '#684df4', color: '#fff' }}>
+                          {u.name[0].toUpperCase()}
+                        </div>
+                        <span className="font-medium" style={{ color: '#17184a' }}>{u.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-black/50 text-xs hidden sm:table-cell">{u.email || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold capitalize" style={roleColor(u.role)}>
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-black/50 text-xs hidden md:table-cell">{u.department || '—'}</td>
+                    <td className="px-5 py-3 text-black/50 text-xs hidden md:table-cell">{u.phone || '—'}</td>
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      <button onClick={() => openEdit(u)} className="text-xs text-black/40 hover:text-black mr-2">Edit</button>
+                      <button onClick={() => openPwModal(u)} className="text-xs text-black/40 hover:text-black mr-2">Password</button>
+                      <button onClick={() => setDeleteModal(u)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
+                    </td>
+                  </tr>
+                ))}
+                {active.length === 0 && (
+                  <tr><td colSpan={6} className="px-5 py-12 text-center text-black/30">No active users</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Deactivated users section */}
+          {showInactive && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-400 mb-3">
+                Deactivated Users ({inactive.length})
+              </p>
+              {inactive.length === 0 ? (
+                <p className="text-sm text-black/30 px-1">No deactivated users</p>
+              ) : (
+                <div className="bg-white rounded-2xl border border-red-100 overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-red-50 text-black/30 text-xs uppercase tracking-wide">
+                        <th className="text-left px-5 py-3 font-medium">Name</th>
+                        <th className="text-left px-5 py-3 font-medium hidden sm:table-cell">Email</th>
+                        <th className="text-left px-5 py-3 font-medium">Role</th>
+                        <th className="text-left px-5 py-3 font-medium hidden md:table-cell">Department</th>
+                        <th className="px-5 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {inactive.map(u => (
+                        <tr key={u.id} className="border-b border-red-50 last:border-0 opacity-70 hover:opacity-100 transition-opacity">
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-black/10 text-black/40">
+                                {u.name[0].toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-medium text-black/50">{u.name}</p>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-500 font-medium">Deactivated</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3 text-black/40 text-xs hidden sm:table-cell">{u.email || '—'}</td>
+                          <td className="px-5 py-3">
+                            <span className="px-2 py-0.5 rounded text-xs font-semibold capitalize opacity-50" style={roleColor(u.role)}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-black/40 text-xs hidden md:table-cell">{u.department || '—'}</td>
+                          <td className="px-5 py-3 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => handleReactivate(u)}
+                              className="text-xs font-semibold mr-3 px-2 py-1 rounded-lg text-white"
+                              style={{ background: '#684df4' }}
+                            >
+                              Reactivate
+                            </button>
+                            <button
+                              onClick={() => setDeleteModal(u)}
+                              className="text-xs text-red-400 hover:text-red-600"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Modal */}
+      {/* Create/Edit modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="font-serif text-xl font-medium mb-5">{editing ? 'Edit User' : 'Add User'}</h2>
+            <h2 className="font-serif text-xl font-medium mb-5" style={{ color: '#17184a' }}>
+              {editing ? 'Edit User' : 'Add User'}
+            </h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -216,14 +321,10 @@ export default function Users() {
                     value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
               </div>
-
               {error && <p className="text-sm text-red-500">{error}</p>}
-
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 py-2.5 rounded-lg border border-black/15 text-sm">
-                  Cancel
-                </button>
+                  className="flex-1 py-2.5 rounded-lg border border-black/15 text-sm">Cancel</button>
                 <button type="submit" disabled={saving}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold"
                   style={{ background: '#c8f04a', color: '#111318' }}>
@@ -234,9 +335,10 @@ export default function Users() {
           </div>
         </div>
       )}
+
       {/* Password reset modal */}
       {pwModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
             <h2 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Reset Password</h2>
             <p className="text-xs text-black/40 mb-4">{pwModal.name}</p>
@@ -262,33 +364,37 @@ export default function Users() {
 
       {/* Delete confirmation modal */}
       {deleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h2 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Delete User</h2>
-            <p className="text-sm text-black/60 mb-1">
-              Choose how to remove <strong>{deleteModal.name}</strong>:
+            <h2 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>
+              {deleteModal.isActive === false ? 'Manage Deactivated User' : 'Remove User'}
+            </h2>
+            <p className="text-sm text-black/60 mb-4">
+              <strong>{deleteModal.name}</strong>
+              {deleteModal.isActive === false && <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-100 text-red-500">Deactivated</span>}
             </p>
-            <div className="space-y-3 mt-4">
-              <button
-                onClick={() => handleDeactivate(false)}
-                disabled={deleteLoading}
-                className="w-full text-left px-4 py-3 rounded-xl border border-black/10 hover:bg-black/3 transition"
-              >
-                <p className="text-sm font-medium" style={{ color: '#17184a' }}>Deactivate</p>
-                <p className="text-xs text-black/40 mt-0.5">Block login, keep all data in the database</p>
-              </button>
-              <button
-                onClick={() => handleDeactivate(true)}
-                disabled={deleteLoading}
-                className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 transition"
-              >
+            <div className="space-y-3">
+              {deleteModal.isActive !== false && (
+                <button onClick={() => handleDelete(false)} disabled={deleteLoading}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-black/10 hover:bg-black/3 transition">
+                  <p className="text-sm font-medium" style={{ color: '#17184a' }}>Deactivate</p>
+                  <p className="text-xs text-black/40 mt-0.5">Block login · data stays in database · can be reactivated later</p>
+                </button>
+              )}
+              {deleteModal.isActive === false && (
+                <button onClick={() => { setDeleteModal(null); handleReactivate(deleteModal) }} disabled={deleteLoading}
+                  className="w-full text-left px-4 py-3 rounded-xl border border-green-200 bg-green-50 hover:bg-green-100 transition">
+                  <p className="text-sm font-medium text-green-700">Reactivate</p>
+                  <p className="text-xs text-green-500 mt-0.5">Restore access — user can log in again</p>
+                </button>
+              )}
+              <button onClick={() => handleDelete(true)} disabled={deleteLoading}
+                className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 transition">
                 <p className="text-sm font-medium text-red-600">Permanently Delete</p>
-                <p className="text-xs text-red-400 mt-0.5">Remove user and all their data (attendance, bills, tasks, uploads)</p>
+                <p className="text-xs text-red-400 mt-0.5">Remove user + all attendance, bills, tasks, uploads — cannot be undone</p>
               </button>
-              <button
-                onClick={() => setDeleteModal(null)}
-                className="w-full py-2.5 rounded-xl border border-black/15 text-sm text-black/60 hover:text-black"
-              >
+              <button onClick={() => setDeleteModal(null)}
+                className="w-full py-2.5 rounded-xl border border-black/15 text-sm text-black/50 hover:text-black">
                 Cancel
               </button>
             </div>
