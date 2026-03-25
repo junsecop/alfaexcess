@@ -82,13 +82,22 @@ export default function Users() {
     }
   }
 
-  const handleDeactivate = async (u) => {
-    if (!confirm(`Deactivate ${u.name}?`)) return
+  const [deleteModal, setDeleteModal] = useState(null) // user to delete
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const handleDeactivate = async (permanent = false) => {
+    const u = deleteModal
+    if (!u) return
+    setDeleteLoading(true)
     try {
-      await api.delete(`/auth/users/${u.id}`)
+      const url = permanent ? `/auth/users/${u.id}?permanent=true` : `/auth/users/${u.id}`
+      await api.delete(url)
+      setDeleteModal(null)
       load()
     } catch (err) {
       alert(err.response?.data?.message || 'Failed')
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -150,7 +159,8 @@ export default function Users() {
                   <td className="px-5 py-3 text-black/60">{u.phone || '—'}</td>
                   <td className="px-5 py-3 text-right">
                     <button onClick={() => openEdit(u)} className="text-xs text-black/40 hover:text-black mr-3">Edit</button>
-                    <button onClick={() => handleDeactivate(u)} className="text-xs text-red-400 hover:text-red-600">Deactivate</button>
+                    <button onClick={() => openPwModal(u)} className="text-xs text-black/40 hover:text-black mr-3">Password</button>
+                    <button onClick={() => setDeleteModal(u)} className="text-xs text-red-400 hover:text-red-600">Delete</button>
                   </td>
                 </tr>
               ))}
@@ -221,6 +231,72 @@ export default function Users() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Password reset modal */}
+      {pwModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Reset Password</h2>
+            <p className="text-xs text-black/40 mb-4">{pwModal.name}</p>
+            <form onSubmit={handleResetPassword} className="space-y-3">
+              <input required type="password" minLength={6} placeholder="New password (min 6 chars)"
+                className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                value={newPw} onChange={e => setNewPw(e.target.value)} />
+              {pwError && <p className="text-sm text-red-500">{pwError}</p>}
+              {pwSuccess && <p className="text-sm text-green-600">{pwSuccess}</p>}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setPwModal(null)}
+                  className="flex-1 py-2.5 rounded-lg border border-black/15 text-sm">Cancel</button>
+                <button type="submit" disabled={pwSaving}
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  style={{ background: '#684df4' }}>
+                  {pwSaving ? 'Saving…' : 'Update'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Delete User</h2>
+            <p className="text-sm text-black/60 mb-1">
+              Choose how to remove <strong>{deleteModal.name}</strong>:
+            </p>
+            <div className="space-y-3 mt-4">
+              <button
+                onClick={() => handleDeactivate(false)}
+                disabled={deleteLoading}
+                className="w-full text-left px-4 py-3 rounded-xl border border-black/10 hover:bg-black/3 transition"
+              >
+                <p className="text-sm font-medium" style={{ color: '#17184a' }}>Deactivate</p>
+                <p className="text-xs text-black/40 mt-0.5">Block login, keep all data in the database</p>
+              </button>
+              <button
+                onClick={() => handleDeactivate(true)}
+                disabled={deleteLoading}
+                className="w-full text-left px-4 py-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 transition"
+              >
+                <p className="text-sm font-medium text-red-600">Permanently Delete</p>
+                <p className="text-xs text-red-400 mt-0.5">Remove user and all their data (attendance, bills, tasks, uploads)</p>
+              </button>
+              <button
+                onClick={() => setDeleteModal(null)}
+                className="w-full py-2.5 rounded-xl border border-black/15 text-sm text-black/60 hover:text-black"
+              >
+                Cancel
+              </button>
+            </div>
+            {deleteLoading && (
+              <div className="flex justify-center mt-3">
+                <div className="w-5 h-5 border-2 border-[#684df4] border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </div>
         </div>
       )}

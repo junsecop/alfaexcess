@@ -11,24 +11,32 @@ const PRIORITY_COLORS = {
 }
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-700',
-  'in-progress': 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-blue-100 text-blue-700',
   done: 'bg-green-100 text-green-700',
   cancelled: 'bg-gray-100 text-gray-500',
 }
+const STATUS_LABELS = {
+  pending: 'Pending',
+  in_progress: 'In Progress',
+  done: 'Done',
+  cancelled: 'Cancelled',
+}
 
 function CreateTaskModal({ users, onClose, onCreated }) {
-  const [form, setForm] = useState({ title: '', description: '', assignedTo: '', priority: 'medium', dueDate: '' })
+  const [form, setForm] = useState({ title: '', description: '', assignedToId: '', priority: 'medium', dueDate: '' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const submit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError('')
     try {
       const r = await api.post('/tasks', form)
       onCreated(r.data)
       onClose()
-    } catch {
-      // ignore
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create task')
     } finally {
       setLoading(false)
     }
@@ -37,28 +45,40 @@ function CreateTaskModal({ users, onClose, onCreated }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 className="font-serif text-lg font-medium mb-4">New Task</h3>
+        <h3 className="font-serif text-lg font-medium mb-4" style={{ color: '#17184a' }}>New Task</h3>
         <form onSubmit={submit} className="space-y-3">
           <input required className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm" placeholder="Title"
             value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-          <textarea className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm h-20 resize-none" placeholder="Description"
+          <textarea className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm h-20 resize-none" placeholder="Description (optional)"
             value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-          <select required className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
-            value={form.assignedTo} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))}>
-            <option value="">Assign to…</option>
-            {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
-          </select>
-          <select className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
-            value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
-            {['low','medium','high','urgent'].map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <input type="date" className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
-            value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+          <div>
+            <label className="text-xs font-medium text-black/50 mb-1 block">Assign to *</label>
+            <select required className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm bg-white"
+              value={form.assignedToId} onChange={e => setForm(f => ({ ...f, assignedToId: e.target.value }))}>
+              <option value="">Select staff member…</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-black/50 mb-1 block">Priority</label>
+              <select className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm bg-white"
+                value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+                {['low', 'medium', 'high', 'urgent'].map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-black/50 mb-1 block">Due Date</label>
+              <input type="date" className="w-full px-3 py-2 border border-black/15 rounded-lg text-sm"
+                value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
+            </div>
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-black/15 text-sm">Cancel</button>
-            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: '#c8f04a', color: '#111318' }}>
-              {loading ? '…' : 'Create'}
+            <button type="submit" disabled={loading} className="flex-1 py-2 rounded-lg text-sm font-semibold text-white"
+              style={{ background: '#684df4' }}>
+              {loading ? '…' : 'Assign Task'}
             </button>
           </div>
         </form>
@@ -88,7 +108,7 @@ export default function WorkLog() {
   const updateStatus = async (id, status) => {
     try {
       const r = await api.patch(`/tasks/${id}/status`, { status })
-      setTasks(ts => ts.map(t => t._id === id ? r.data : t))
+      setTasks(ts => ts.map(t => t.id === id ? r.data : t))
     } catch {}
   }
 
@@ -98,15 +118,17 @@ export default function WorkLog() {
         {/* Header */}
         <div className="flex gap-3 items-center">
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-black/15 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#c8f04a]">
+            className="px-3 py-2 rounded-lg border border-black/15 text-sm bg-white focus:outline-none">
             <option value="">All statuses</option>
-            {['pending','in-progress','done','cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+            {Object.entries(STATUS_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
           </select>
           {isManager && (
             <button onClick={() => setShowModal(true)}
-              className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold"
-              style={{ background: '#c8f04a', color: '#111318' }}>
-              + New Task
+              className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold text-white"
+              style={{ background: '#684df4' }}>
+              + Assign Task
             </button>
           )}
         </div>
@@ -119,12 +141,12 @@ export default function WorkLog() {
             </div>
           )}
           {tasks.map(task => (
-            <div key={task._id} className="bg-white rounded-2xl p-5 border border-black/8">
+            <div key={task.id} className="bg-white rounded-2xl p-5 border border-black/8">
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <p className="font-medium text-[#111318] text-sm">{task.title}</p>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
+                    <p className="font-medium text-sm" style={{ color: '#17184a' }}>{task.title}</p>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${PRIORITY_COLORS[task.priority]}`}>
                       {task.priority}
                     </span>
                   </div>
@@ -132,25 +154,25 @@ export default function WorkLog() {
                     <p className="text-xs text-black/50 mb-2">{task.description}</p>
                   )}
                   <div className="flex items-center gap-3 text-xs text-black/40 flex-wrap">
-                    {task.assignedTo && <span>Assigned to: {task.assignedTo.name || '—'}</span>}
-                    {task.dueDate && <span>Due: {task.dueDate.slice(0, 10)}</span>}
+                    {task.assignedTo && <span>👤 {task.assignedTo.name}</span>}
+                    {task.dueDate && <span>📅 Due: {task.dueDate.slice(0, 10)}</span>}
                     {task.assignedBy && <span>By: {task.assignedBy.name}</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[task.status]}`}>
-                    {task.status}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[task.status] || 'bg-gray-100 text-gray-500'}`}>
+                    {STATUS_LABELS[task.status] || task.status}
                   </span>
                   {task.status !== 'done' && task.status !== 'cancelled' && (
                     <select
                       value={task.status}
-                      onChange={e => updateStatus(task._id, e.target.value)}
+                      onChange={e => updateStatus(task.id, e.target.value)}
                       className="text-xs px-2 py-1 rounded border border-black/15 bg-white"
                     >
-                      <option value="pending">pending</option>
-                      <option value="in-progress">in-progress</option>
-                      <option value="done">done</option>
-                      {isManager && <option value="cancelled">cancelled</option>}
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="done">Done</option>
+                      {isManager && <option value="cancelled">Cancelled</option>}
                     </select>
                   )}
                 </div>

@@ -19,11 +19,20 @@ const setCookies = (res, accessToken, refreshToken) => {
 
 const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department })
 
-// Login
+// Login (by name or email)
 router.post('/login', async (req, res) => {
   const { email, password } = req.body
-  const user = await prisma.user.findUnique({ where: { email } })
-  if (!user) return res.status(401).json({ message: 'Invalid credentials' })
+  if (!email || !password) return res.status(400).json({ message: 'Name/email and password are required' })
+
+  // Try email first, then name
+  let user = null
+  if (email.includes('@')) {
+    user = await prisma.user.findUnique({ where: { email } })
+  }
+  if (!user) {
+    user = await prisma.user.findFirst({ where: { name: email } })
+  }
+  if (!user || !user.isActive) return res.status(401).json({ message: 'Invalid credentials' })
   const match = await bcrypt.compare(password, user.password)
   if (!match) return res.status(401).json({ message: 'Invalid credentials' })
   const { accessToken, refreshToken } = signTokens(user.id)
@@ -103,8 +112,32 @@ router.put('/users/:id', protect, requireRole('admin'), async (req, res) => {
 
 // Delete/deactivate user — admin only
 router.delete('/users/:id', protect, requireRole('admin'), async (req, res) => {
-  if (req.params.id === req.user.id) return res.status(400).json({ message: 'Cannot deactivate yourself' })
-  await prisma.user.update({ where: { id: req.params.id }, data: { isActive: false } })
+  const { id } = req.params
+  if (id === req.user.id) return res.status(400).json({ message: 'Cannot delete yourself' })
+
+  const { permanent } = req.query
+
+  if (permanent === 'true') {
+    // Nullify FK references where this user is approver/assigner (not owner)
+    await Promise.all([
+      prisma.attendance.updateMany({ where: { approvedById: id }, data: { approvedById: null } }),
+      prisma.bill.updateMany({ where: { approvedById: id }, data: { approvedById: null } }),
+      prisma.task.deleteMany({ where: { assignedById: id } }),
+    ])
+    // Delete all owned data
+    await Promise.all([
+      prisma.attendance.deleteMany({ where: { userId: id } }),
+      prisma.notification.deleteMany({ where: { recipientId: id } }),
+      prisma.bill.deleteMany({ where: { submittedById: id } }),
+      prisma.task.deleteMany({ where: { assignedToId: id } }),
+      prisma.upload.deleteMany({ where: { uploadedById: id } }),
+    ])
+    await prisma.user.delete({ where: { id } })
+    return res.json({ message: 'User and all data permanently deleted' })
+  }
+
+  // Soft deactivate (keeps data, just blocks login)
+  await prisma.user.update({ where: { id }, data: { isActive: false, refreshToken: null } })
   res.json({ message: 'User deactivated' })
 })
 
