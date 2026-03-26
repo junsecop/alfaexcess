@@ -234,6 +234,7 @@
     <a href="#billing">Billing</a>
     <a href="#tasks">Tasks</a>
     <a href="#contact">Contact</a>
+    <a href="#users">Users</a>
     <a href="#tech">Technology</a>
   </div>
 </nav>
@@ -253,6 +254,7 @@
     <span class="tag">Customer Follow-up</span>
     <span class="tag">Auto Checkout 5:30 PM</span>
     <span class="tag">Admin Visit Log</span>
+    <span class="tag">Permission Control</span>
     <span class="tag">CSV Reports</span>
     <span class="tag">Mobile Ready</span>
     <span class="tag">Real-time Notifications</span>
@@ -297,9 +299,19 @@
       <p>All staff contact numbers in one place. Message Generator builds a professional WhatsApp message with product details, date, and purpose to share with customers.</p>
     </div>
     <div class="card">
+      <div class="card-icon" style="background:#fef9c3">⏰</div>
+      <h3>Auto Checkout</h3>
+      <p>If a staff member forgets to check out, the system automatically closes their previous day's record at 5:30 PM when they log in next morning, with a dashboard notification.</p>
+    </div>
+    <div class="card">
       <div class="card-icon" style="background:#e0f2fe">👥</div>
       <h3>User Management</h3>
       <p>Add staff, assign roles, deactivate accounts, or permanently delete users with full data cascade. Visual role selector with clear permissions.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f0fdf4">🔑</div>
+      <h3>Granular Permissions</h3>
+      <p>Admin can override default role permissions per user — restrict a manager from downloading CSV, block attendance editing, or disable attendance tracking entirely for specific users.</p>
     </div>
     <div class="card">
       <div class="card-icon" style="background:#f0fdf4">📊</div>
@@ -315,7 +327,7 @@
 <section id="roles">
   <div class="section-label">Access Control</div>
   <div class="section-title">Three-tier role system</div>
-  <div class="section-desc">Every user has a role that controls what they can see and do. Roles are assigned by admin and shown visually during onboarding.</div>
+  <div class="section-desc">Every user has a role that controls what they can see and do. Roles are assigned by admin and shown visually during onboarding. Individual permissions can be overridden per user — e.g. restrict a specific manager from downloading CSV or editing attendance.</div>
 
   <div class="roles-grid">
     <div class="role-card">
@@ -352,11 +364,12 @@
       <p>Full system access. Logs visits (not attendance), broadcasts messages, manages users, and has complete system control.</p>
       <div class="role-perms">
         <div class="perm">✓ All manager permissions</div>
-        <div class="perm">✓ Visit log (not attendance)</div>
+        <div class="perm">✓ Visit log (auto-checkout 5:30 PM)</div>
         <div class="perm">✓ Broadcast messages</div>
         <div class="perm">✓ Add / deactivate users</div>
+        <div class="perm">✓ Set per-user permissions</div>
+        <div class="perm">✓ Toggle attendance per user</div>
         <div class="perm">✓ Permanent delete with cascade</div>
-        <div class="perm">✓ Delete tasks</div>
       </div>
     </div>
   </div>
@@ -410,6 +423,34 @@
     </div>
   </div>
 
+  <div class="feature-row reverse" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Auto Checkout at 5:30 PM</h3>
+      <p>When a staff member opens the Dashboard the next morning, the system checks if yesterday's attendance was left open. If checked in but never checked out, it is automatically closed at 5:30 PM and the user is notified.</p>
+      <ul class="feature-list">
+        <li>Triggers when the person themselves logs in — not a global batch job</li>
+        <li>Only closes yesterday's record (not older history)</li>
+        <li>Only runs if checkIn exists and checkOut is missing</li>
+        <li>Creates a notification in the notification bell</li>
+        <li>Yellow banner on Dashboard: "yesterday record closed office 5:30 pm"</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">DASHBOARD BANNER</div>
+      <div style="background:#fef9c3;border:1px solid #fde047;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:1.2rem">⏰</div>
+        <div style="color:#713f12;font-size:.82rem;font-weight:500">yesterday record closed office 5:30 pm</div>
+      </div>
+      <div class="mock-row" style="margin-top:10px">
+        <div style="font-size:1.1rem">🔔</div>
+        <div class="mock-text">
+          <div style="color:#fff;font-size:.78rem;font-weight:500;margin-bottom:2px">Auto checkout</div>
+          <div style="color:rgba(255,255,255,.5);font-size:.72rem">yesterday record closed office 5:30 pm</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div style="margin-top: 40px;">
     <div class="section-desc" style="margin-bottom:16px;"><strong style="color:var(--navy)">Attendance status types:</strong></div>
     <div class="status-grid">
@@ -425,12 +466,12 @@
   <div class="feature-row reverse" style="margin-top:56px">
     <div class="feature-content">
       <h3>Admin Visit Log</h3>
-      <p>When the admin checks in, it creates a "visit" record rather than personal attendance. All active users receive a notification immediately — admin can optionally add a broadcast message.</p>
+      <p>When the admin checks in, it creates a "visit" record rather than personal attendance. All active users receive a notification immediately — admin can optionally add a broadcast message. Checkout is automatically set to 5:30 PM on check-in — no manual checkout needed.</p>
       <ul class="feature-list">
         <li>Admin check-in = Visit log, not regular attendance</li>
+        <li>Checkout auto-set to 05:30 PM at check-in time</li>
         <li>Instant notification sent to all active users</li>
         <li>Optional broadcast message (e.g. announcements)</li>
-        <li>Admin checkout is simple — no half-day option</li>
         <li>Location shown in notification message</li>
       </ul>
     </div>
@@ -747,6 +788,62 @@
       <h3>Profile Management</h3>
       <p>Users can update their own profile, change passwords, and upload a profile picture. Avatar stored in Supabase Storage.</p>
     </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f0fdf4">🔑</div>
+      <h3>Per-User Permissions</h3>
+      <p>Admin can override role defaults per user: Allow / Deny / Default for Download CSV and Edit Attendance. Toggle "Requires Attendance" to hide check-in for users who don't need it.</p>
+    </div>
+  </div>
+
+  <div class="feature-row" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Granular Permission Overrides</h3>
+      <p>Beyond roles, admin can fine-tune each user's access. A manager can be restricted from editing attendance records or downloading data exports, while still keeping all other manager abilities.</p>
+      <ul class="feature-list">
+        <li><strong>Can Download CSV</strong> — Allow / Deny / Default (role-based)</li>
+        <li><strong>Can Edit Attendance</strong> — Allow / Deny / Default (role-based)</li>
+        <li><strong>Requires Attendance</strong> — toggle off to hide check-in/out entirely</li>
+        <li>Default = role decides (admin/manager: allowed, staff: denied)</li>
+        <li>Useful for admin accounts that should not do attendance</li>
+        <li>Saved in Users edit modal — Permissions section</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:12px;letter-spacing:1px">PERMISSIONS</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-size:.8rem;font-weight:600">Download CSV</div>
+            <div style="color:rgba(255,255,255,.4);font-size:.7rem">Default (allowed)</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <span style="background:rgba(104,77,244,.4);color:#a78bfa;font-size:.65rem;padding:3px 7px;border-radius:4px;font-weight:600">Default</span>
+            <span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-size:.65rem;padding:3px 7px;border-radius:4px">Allow</span>
+            <span style="background:rgba(248,113,113,.15);color:#f87171;font-size:.65rem;padding:3px 7px;border-radius:4px">Deny</span>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-size:.8rem;font-weight:600">Edit Attendance</div>
+            <div style="color:rgba(255,255,255,.4);font-size:.7rem">Default (allowed)</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <span style="background:rgba(104,77,244,.4);color:#a78bfa;font-size:.65rem;padding:3px 7px;border-radius:4px;font-weight:600">Default</span>
+            <span style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-size:.65rem;padding:3px 7px;border-radius:4px">Allow</span>
+            <span style="background:rgba(248,113,113,.15);color:#f87171;font-size:.65rem;padding:3px 7px;border-radius:4px">Deny</span>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-size:.8rem;font-weight:600">Requires Attendance</div>
+            <div style="color:rgba(255,255,255,.4);font-size:.7rem">Uncheck to hide check-in</div>
+          </div>
+          <div style="width:34px;height:18px;border-radius:999px;background:var(--purple);position:relative">
+            <div style="width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;right:2px;top:2px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -922,14 +1019,32 @@
         <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Mark / edit staff attendance</td>
           <td style="padding:13px 20px;color:#9ca3af">—</td>
-          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓ <span style="font-size:.75rem;color:#9ca3af">(overridable)</span></td>
           <td style="padding:13px 20px;color:#34d399">✓</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border);background:#fafafa">
-          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Download CSV report</td>
-          <td style="padding:13px 20px;color:#34d399">✓ (own)</td>
-          <td style="padding:13px 20px;color:#34d399">✓ (all)</td>
-          <td style="padding:13px 20px;color:#34d399">✓ (all)</td>
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Download attendance CSV</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓ <span style="font-size:.75rem;color:#9ca3af">(overridable)</span></td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Download billing CSV</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓ <span style="font-size:.75rem;color:#9ca3af">(overridable)</span></td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Auto checkout at 5:30 PM (staff, on login)</td>
+          <td style="padding:13px 20px;color:#2dd4bf;font-size:.8rem">Auto</td>
+          <td style="padding:13px 20px;color:#2dd4bf;font-size:.8rem">Auto</td>
+          <td style="padding:13px 20px;color:#9ca3af;font-size:.8rem">Visit only</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Admin visit auto-checkout 5:30 PM (instant)</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#2dd4bf;font-size:.8rem">Auto</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Submit bills</td>
@@ -991,8 +1106,20 @@
           <td style="padding:13px 20px;color:#9ca3af">—</td>
           <td style="padding:13px 20px;color:#34d399">✓</td>
         </tr>
-        <tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
           <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Permanent delete with cascade</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Set per-user permission overrides</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr>
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Disable attendance for specific users</td>
           <td style="padding:13px 20px;color:#9ca3af">—</td>
           <td style="padding:13px 20px;color:#9ca3af">—</td>
           <td style="padding:13px 20px;color:#34d399">✓</td>

@@ -140,7 +140,7 @@ export default function Dashboard() {
         )}
 
         {/* Attendance card */}
-        {['admin', 'manager', 'staff'].includes(user?.role) && (
+        {['admin', 'manager', 'staff'].includes(user?.role) && user?.requiresAttendance !== false && (
           <div className="bg-white rounded-2xl p-5 border border-black/8">
             <p className="text-xs font-semibold uppercase tracking-wide text-black/40 mb-4">
               {user?.role === 'admin' ? "Today's Visit Log" : "Today's Attendance"}

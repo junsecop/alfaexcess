@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Layout from '../components/Layout'
 import api from '../api/axios'
 
-const EMPTY = { name: '', email: '', password: '', role: 'staff', department: '', phone: '' }
+const EMPTY = { name: '', email: '', password: '', role: 'staff', department: '', phone: '', canDownloadCsv: null, canEditAttendance: null, requiresAttendance: true }
 
 export default function Users() {
   const [users, setUsers] = useState([])
@@ -44,7 +44,7 @@ export default function Users() {
 
   const openEdit = (u) => {
     setEditing(u)
-    setForm({ name: u.name, email: u.email || '', password: '', role: u.role, department: u.department || '', phone: u.phone || '' })
+    setForm({ name: u.name, email: u.email || '', password: '', role: u.role, department: u.department || '', phone: u.phone || '', canDownloadCsv: u.canDownloadCsv ?? null, canEditAttendance: u.canEditAttendance ?? null, requiresAttendance: u.requiresAttendance ?? true })
     setError('')
     setShowModal(true)
   }
@@ -55,7 +55,7 @@ export default function Users() {
     setError('')
     try {
       if (editing) {
-        await api.put(`/auth/users/${editing.id}`, { name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone })
+        await api.put(`/auth/users/${editing.id}`, { name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone, canDownloadCsv: form.canDownloadCsv, canEditAttendance: form.canEditAttendance, requiresAttendance: form.requiresAttendance })
       } else {
         await api.post('/auth/create-user', form)
       }
@@ -336,6 +336,53 @@ export default function Users() {
                     value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
               </div>
+
+              {/* Permissions — only shown when editing */}
+              {editing && (
+                <div className="border border-black/10 rounded-xl p-4 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-black/40">Permissions</p>
+                  {[
+                    { key: 'canDownloadCsv', label: 'Download CSV', defaultFor: ['admin', 'manager'] },
+                    { key: 'canEditAttendance', label: 'Edit Attendance', defaultFor: ['admin', 'manager'] },
+                  ].map(({ key, label, defaultFor }) => {
+                    const roleDefault = defaultFor.includes(form.role)
+                    const resolved = form[key] === null ? roleDefault : form[key]
+                    return (
+                      <div key={key} className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-medium" style={{ color: '#17184a' }}>{label}</p>
+                          {form[key] === null && <p className="text-xs text-black/30">Default ({roleDefault ? 'allowed' : 'denied'})</p>}
+                        </div>
+                        <div className="flex gap-1">
+                          {[{ val: null, text: 'Default' }, { val: true, text: 'Allow' }, { val: false, text: 'Deny' }].map(opt => (
+                            <button key={String(opt.val)} type="button"
+                              onClick={() => setForm(f => ({ ...f, [key]: opt.val }))}
+                              className={`px-2 py-1 rounded text-xs font-medium transition ${
+                                form[key] === opt.val
+                                  ? opt.val === false ? 'bg-red-100 text-red-600' : opt.val === true ? 'bg-green-100 text-green-700' : 'bg-[#684df4]/10 text-[#684df4]'
+                                  : 'bg-black/5 text-black/40 hover:bg-black/10'
+                              }`}>
+                              {opt.text}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div className="flex items-center justify-between gap-3 pt-1 border-t border-black/8">
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: '#17184a' }}>Requires Attendance</p>
+                      <p className="text-xs text-black/30">Uncheck to hide check-in/out for this user</p>
+                    </div>
+                    <button type="button"
+                      onClick={() => setForm(f => ({ ...f, requiresAttendance: !f.requiresAttendance }))}
+                      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${form.requiresAttendance ? 'bg-[#684df4]' : 'bg-black/20'}`}>
+                      <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${form.requiresAttendance ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {error && <p className="text-sm text-red-500">{error}</p>}
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setShowModal(false)}

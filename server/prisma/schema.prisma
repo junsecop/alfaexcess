@@ -79,9 +79,12 @@ model User {
   avatar       String?
   department   String?
   phone        String?
-  isActive     Boolean  @default(true)
-  refreshToken String?
-  createdAt    DateTime @default(now())
+  isActive            Boolean  @default(true)
+  refreshToken        String?
+  canDownloadCsv      Boolean?
+  canEditAttendance   Boolean?
+  requiresAttendance  Boolean  @default(true)
+  createdAt           DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   attendance        Attendance[]       @relation("UserAttendance")

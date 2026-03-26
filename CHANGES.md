@@ -121,10 +121,13 @@ Billing page gains a **Collections** tab showing monthly payment analytics from 
 
 ### Attendance — CSV Hidden from Staff
 Download CSV button in Attendance page is now only visible to admin and manager. Staff can no longer download attendance data.
+- Before: staff could download their own attendance CSV
+- After: CSV download is admin/manager only
+
 **File:** `attend/src/pages/Attendance.jsx`
 
 ### Billing — Download CSV Added
-New `↓ Download CSV` button added to Billing page header (admin/manager only). Downloads `billing-YYYY-MM.csv` with columns: Title, Type, Category, Amount, Status, Month, Submitted By, Admin Note.
+New `↓ Download CSV` button added to Billing page header (admin/manager only). Downloads `billing-YYYY-MM.csv` with columns: Title, Type, Category, Amount, Status, Month, Submitted By, Admin Note. Button disabled when no bills are loaded.
 **File:** `attend/src/pages/Billing.jsx`
 
 ---
@@ -146,7 +149,13 @@ When a staff member opens the Dashboard (loads `/attendance/today`), the system 
 ## Presentation
 
 ### PRESENTATION.html Updated
-Added new sections: Tasks with Payment Collection, Contact & WhatsApp, Collections analytics. Updated feature checklist table with all new role-based permissions. Updated hero tags and nav links.
+Updated across multiple sessions to reflect all features:
+- Added sections: Tasks + Payment Collection, Contact & WhatsApp, Collections analytics, Auto Checkout
+- Added hero tags: Payment Collection, Task Assignment, WhatsApp Contacts, Auto Checkout 5:30 PM
+- Summary table: Fixed CSV rows (staff can no longer download), added billing CSV row, added auto-checkout row
+- Overview cards: Added Auto Checkout card
+- Nav links updated
+
 **File:** `PRESENTATION.html`
 
 ---

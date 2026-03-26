@@ -43,6 +43,7 @@ router.post('/checkin', protect, async (req, res) => {
       date: today(),
       checkIn: checkInTime,
       status,
+      ...(isAdmin && { checkOut: '05:30 PM' }),
       ...(latitude != null && { latitude: parseFloat(latitude) }),
       ...(longitude != null && { longitude: parseFloat(longitude) }),
       ...(locationName && { locationName }),
@@ -114,6 +115,7 @@ router.get('/all', protect, requireRole('admin', 'manager'), async (req, res) =>
 
 // Admin/manager edit a record (check-in time, check-out, status, note)
 router.patch('/:id', protect, requireRole('admin', 'manager'), async (req, res) => {
+  if (req.user.canEditAttendance === false) return res.status(403).json({ message: 'Permission denied: cannot edit attendance' })
   const { checkIn, checkOut, status, note } = req.body
   const record = await prisma.attendance.update({
     where: { id: req.params.id },

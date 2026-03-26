@@ -33,7 +33,7 @@ const setCookies = (res, at, rt) => {
   res.cookie('accessToken',  at, { httpOnly: true, secure: isProd, maxAge: 8 * 60 * 60 * 1000,     sameSite: isProd ? 'none' : 'lax' })
   res.cookie('refreshToken', rt, { httpOnly: true, secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
 }
-const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone })
+const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone, canDownloadCsv: u.canDownloadCsv ?? null, canEditAttendance: u.canEditAttendance ?? null, requiresAttendance: u.requiresAttendance ?? true })
 
 const uploadToStorage = async (file, folder) => {
   const ext = path.extname(file.originalname)
@@ -115,7 +115,7 @@ app.get('/api/auth/users', protect, async (req, res) => {
   const showAll = req.query.includeInactive === 'true' && ['admin', 'manager'].includes(req.user.role)
   const users = await db.user.findMany({
     where: showAll ? {} : { isActive: true },
-    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true },
+    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true, canDownloadCsv: true, canEditAttendance: true, requiresAttendance: true },
   })
   res.json(users)
 })
@@ -135,7 +135,7 @@ app.post('/api/auth/create-user', protect, requireRole('admin'), async (req, res
 })
 
 app.put('/api/auth/users/:id', protect, requireRole('admin'), async (req, res) => {
-  const { name, email, role, department, phone, isActive } = req.body
+  const { name, email, role, department, phone, isActive, canDownloadCsv, canEditAttendance, requiresAttendance } = req.body
   const user = await db.user.update({
     where: { id: req.params.id },
     data: {
@@ -145,6 +145,9 @@ app.put('/api/auth/users/:id', protect, requireRole('admin'), async (req, res) =
       ...(department !== undefined && { department }),
       ...(phone !== undefined && { phone }),
       ...(isActive !== undefined && { isActive }),
+      ...(canDownloadCsv !== undefined && { canDownloadCsv }),
+      ...(canEditAttendance !== undefined && { canEditAttendance }),
+      ...(requiresAttendance !== undefined && { requiresAttendance }),
     },
   })
   res.json({ user: safeUser(user) })
@@ -264,6 +267,7 @@ app.post('/api/attendance/checkin', protect, async (req, res) => {
       date: today(),
       checkIn: checkInTime,
       status,
+      ...(isAdmin && { checkOut: '05:30 PM' }),
       ...(latitude  != null && { latitude:  parseFloat(latitude) }),
       ...(longitude != null && { longitude: parseFloat(longitude) }),
       ...(locationName      && { locationName }),
@@ -333,6 +337,7 @@ app.get('/api/attendance/all', protect, requireRole('admin', 'manager'), async (
 
 // Edit a record — admin/manager
 app.patch('/api/attendance/:id', protect, requireRole('admin', 'manager'), async (req, res) => {
+  if (req.user.canEditAttendance === false) return res.status(403).json({ message: 'Permission denied: cannot edit attendance' })
   const { checkIn, checkOut, status, note } = req.body
   const record = await db.attendance.update({
     where: { id: req.params.id },

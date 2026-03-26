@@ -20,7 +20,7 @@ const setCookies = (res, accessToken, refreshToken) => {
   res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: isProd ? 'none' : 'lax' })
 }
 
-const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone })
+const safeUser = (u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, avatar: u.avatar, department: u.department, phone: u.phone, canDownloadCsv: u.canDownloadCsv ?? null, canEditAttendance: u.canEditAttendance ?? null, requiresAttendance: u.requiresAttendance ?? true })
 
 // Login (by name or email)
 router.post('/login', async (req, res) => {
@@ -77,7 +77,7 @@ router.get('/users', protect, async (req, res) => {
   const showAll = req.query.includeInactive === 'true' && ['admin', 'manager'].includes(req.user.role)
   const users = await prisma.user.findMany({
     where: showAll ? {} : { isActive: true },
-    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true },
+    select: { id: true, name: true, email: true, role: true, avatar: true, department: true, phone: true, isActive: true, canDownloadCsv: true, canEditAttendance: true, requiresAttendance: true },
   })
   res.json(users)
 })
@@ -99,7 +99,7 @@ router.post('/create-user', protect, requireRole('admin'), async (req, res) => {
 
 // Update user — admin/manager only
 router.put('/users/:id', protect, requireRole('admin'), async (req, res) => {
-  const { name, email, role, department, phone, isActive } = req.body
+  const { name, email, role, department, phone, isActive, canDownloadCsv, canEditAttendance, requiresAttendance } = req.body
   const user = await prisma.user.update({
     where: { id: req.params.id },
     data: {
@@ -109,6 +109,9 @@ router.put('/users/:id', protect, requireRole('admin'), async (req, res) => {
       ...(department !== undefined && { department }),
       ...(phone !== undefined && { phone }),
       ...(isActive !== undefined && { isActive }),
+      ...(canDownloadCsv !== undefined && { canDownloadCsv }),
+      ...(canEditAttendance !== undefined && { canEditAttendance }),
+      ...(requiresAttendance !== undefined && { requiresAttendance }),
     },
   })
   res.json({ user: safeUser(user) })

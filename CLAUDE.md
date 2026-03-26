@@ -3,7 +3,7 @@
 ## Project Overview
 Internal workforce management system for **Alfanex Solutions Pvt. Ltd.**
 - Attendance tracking, billing, tasks, user management, file uploads
-- ~75% complete as of March 2026
+- ~90% complete as of March 2026
 
 ## Stack
 
@@ -37,9 +37,11 @@ Internal workforce management system for **Alfanex Solutions Pvt. Ltd.**
 ## Key Design Decisions
 - **Direct upload to Supabase Storage** via signed URLs — browser uploads directly, bypasses Vercel 4.5MB limit
 - **IST timezone** (`Asia/Kolkata`) everywhere, 12-hour format for display
-- Admin check-in creates `status: 'visit'` (not attendance), notifies all active users
+- Admin check-in creates `status: 'visit'` (not attendance), notifies all active users, `checkOut` set to `05:30 PM` immediately
 - Soft delete (deactivate) for users, not permanent delete
 - Late threshold: after 09:30 IST = `late`, otherwise `present`
+- **Auto checkout**: `GET /attendance/today` triggers `autoCloseYesterday()` — closes any open record from yesterday at 05:30 PM, creates a notification
+- **Per-user permissions**: 3 boolean columns on User (`canDownloadCsv`, `canEditAttendance`, `requiresAttendance`) — null = use role default, explicit true/false overrides role. Managed in Users edit modal (admin only).
 
 ## Attendance Statuses
 `present` | `late` | `absent` | `leave` | `half_day` | `visit`
@@ -60,7 +62,7 @@ Internal workforce management system for **Alfanex Solutions Pvt. Ltd.**
 | `WorkLog.jsx` | Work log tracking |
 | `DataUploads.jsx` | Upload/manage documents |
 | `Products.jsx` | Product management |
-| `Users.jsx` | Add/edit/deactivate users, reset passwords |
+| `Users.jsx` | Add/edit/deactivate users, reset passwords, set per-user permissions |
 | `Notifications.jsx` | Notification center |
 | `Settings.jsx` | Profile info |
 
@@ -79,7 +81,7 @@ Internal workforce management system for **Alfanex Solutions Pvt. Ltd.**
 - `GET /api/attendance/my` — own records, filter by `?month=YYYY-MM`
 - `GET /api/attendance/today`
 - `GET /api/attendance/all` — admin/manager
-- `PATCH /api/attendance/:id` — admin/manager edit
+- `PATCH /api/attendance/:id` — admin/manager edit (blocked if `canEditAttendance === false`)
 - `POST /api/attendance/mark` — admin/manager mark any user
 - `POST /api/attendance/sync` — sync to Google Sheets
 - `GET /api/attendance/stats`
@@ -103,7 +105,10 @@ Vercel env vars: same keys set in Vercel dashboard.
 
 ## Pending / In Progress
 - Profile page UI (backend routes exist, frontend may need polish)
-- Any remaining frontend features
+- **Supabase DB migration required**: Add 3 columns to `users` table before deploying permissions feature:
+  - `canDownloadCsv` BOOLEAN (nullable)
+  - `canEditAttendance` BOOLEAN (nullable)
+  - `requiresAttendance` BOOLEAN DEFAULT TRUE
 
 ## Google Sheets Integration
 - `server/utils/sheets.js` — syncs attendance records to Google Sheet

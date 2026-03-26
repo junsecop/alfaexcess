@@ -145,7 +145,7 @@ export default function Attendance() {
             onChange={e => setMonth(e.target.value)}
             className="px-3 py-2 rounded-lg border border-black/15 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#684df4]/30"
           />
-          {isManager && (
+          {isManager && user?.canDownloadCsv !== false && (
             <button
               onClick={downloadCSV}
               disabled={records.length === 0}
