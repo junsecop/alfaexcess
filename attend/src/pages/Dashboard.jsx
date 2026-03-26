@@ -16,6 +16,7 @@ function StatCard({ label, value, sub, color }) {
 export default function Dashboard() {
   const { user } = useAuth()
   const [today, setToday] = useState(null)
+  const [closedYesterday, setClosedYesterday] = useState(false)
   const [stats, setStats] = useState(null)
   const [checkingIn, setCheckingIn] = useState(false)
   const [checkingOut, setCheckingOut] = useState(false)
@@ -32,7 +33,11 @@ export default function Dashboard() {
   const month = new Date().toISOString().slice(0, 7)
 
   useEffect(() => {
-    api.get('/attendance/today').then(r => setToday(r.data))
+    api.get('/attendance/today').then(r => {
+      const data = r.data
+      if (data?.autoClosedYesterday) setClosedYesterday(true)
+      setToday(data?.id ? data : null)
+    })
     if (['admin', 'manager'].includes(user?.role)) {
       api.get(`/attendance/stats?month=${month}`).then(r => setStats(r.data))
     }
@@ -125,6 +130,14 @@ export default function Dashboard() {
             {user?.role}
           </span>
         </div>
+
+        {/* Auto-close notice */}
+        {closedYesterday && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-50 border border-yellow-200 text-sm text-yellow-800">
+            <span>⏰</span>
+            <span>yesterday record closed office 5:30 pm</span>
+          </div>
+        )}
 
         {/* Attendance card */}
         {['admin', 'manager', 'staff'].includes(user?.role) && (

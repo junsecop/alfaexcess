@@ -139,6 +139,9 @@
   .badge-visit { background: rgba(45,212,191,.2); color: #2dd4bf; }
   .badge-absent { background: rgba(248,113,113,.2); color: #f87171; }
   .badge-leave { background: rgba(167,139,250,.2); color: #a78bfa; }
+  .badge-collected { background: rgba(52,211,153,.2); color: #34d399; }
+  .badge-pending { background: rgba(248,113,113,.2); color: #f87171; }
+  .badge-collect { background: rgba(167,139,250,.2); color: #a78bfa; }
 
   /* ROLES */
   .roles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
@@ -229,6 +232,8 @@
     <a href="#roles">Roles</a>
     <a href="#attendance">Attendance</a>
     <a href="#billing">Billing</a>
+    <a href="#tasks">Tasks</a>
+    <a href="#contact">Contact</a>
     <a href="#tech">Technology</a>
   </div>
 </nav>
@@ -237,11 +242,16 @@
 <div class="hero">
   <div class="hero-badge">Internal Tools Platform</div>
   <h1>Alfanex <span>Attendance</span> App</h1>
-  <p>A complete workforce management system — attendance, billing, tasks, and team management all in one place.</p>
+  <p>A complete workforce management system — attendance, billing, tasks, payment collection, and team communication all in one place.</p>
   <div class="hero-tags">
     <span class="tag">GPS Check-in</span>
     <span class="tag">Role-based Access</span>
     <span class="tag">Bill Management</span>
+    <span class="tag">Payment Collection</span>
+    <span class="tag">Task Assignment</span>
+    <span class="tag">WhatsApp Contacts</span>
+    <span class="tag">Customer Follow-up</span>
+    <span class="tag">Auto Checkout 5:30 PM</span>
     <span class="tag">Admin Visit Log</span>
     <span class="tag">CSV Reports</span>
     <span class="tag">Mobile Ready</span>
@@ -253,7 +263,7 @@
 <section id="features">
   <div class="section-label">Overview</div>
   <div class="section-title">Everything your team needs</div>
-  <div class="section-desc">Built for Alfanex Solutions Pvt. Ltd. — handles day-to-day operations: who's in the office, billing submissions, task tracking, and team management.</div>
+  <div class="section-desc">Built for Alfanex Solutions Pvt. Ltd. — handles day-to-day operations: who's in the office, billing submissions, task tracking, payment collection, and team communication.</div>
 
   <div class="cards">
     <div class="card">
@@ -273,8 +283,18 @@
     </div>
     <div class="card">
       <div class="card-icon" style="background:#fee2e2">✅</div>
-      <h3>Task Tracking</h3>
-      <p>Assign tasks to team members, set due dates, track completion status, and get notified when tasks are updated.</p>
+      <h3>Task Tracking + Payment</h3>
+      <p>Assign tasks with customer phone, location, and an optional amount to collect. Staff record payment status when marking a task done.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#dcfce7">💰</div>
+      <h3>Payment Collection Analytics</h3>
+      <p>Billing → Collections tab shows monthly totals, per-staff breakdown, collection rate %, and a pending follow-up list with customer WhatsApp links.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#d1fae5">💬</div>
+      <h3>Contact & WhatsApp</h3>
+      <p>All staff contact numbers in one place. Message Generator builds a professional WhatsApp message with product details, date, and purpose to share with customers.</p>
     </div>
     <div class="card">
       <div class="card-icon" style="background:#e0f2fe">👥</div>
@@ -301,25 +321,29 @@
     <div class="role-card">
       <div class="role-icon">👤</div>
       <h4>Staff</h4>
-      <p>Regular employee. Can check in/out, submit bills, manage tasks, and view their own attendance history.</p>
+      <p>Regular employee. Can check in/out, submit bills, manage tasks, record payments, and view their own attendance history.</p>
       <div class="role-perms">
         <div class="perm">✓ Check in / Check out</div>
         <div class="perm">✓ Half-day checkout</div>
         <div class="perm">✓ Submit bills</div>
         <div class="perm">✓ View own attendance</div>
         <div class="perm">✓ Tasks assigned to them</div>
+        <div class="perm">✓ Record payment on tasks</div>
+        <div class="perm">✓ WhatsApp contacts</div>
       </div>
     </div>
     <div class="role-card">
       <div class="role-icon">👥</div>
       <h4>Manager</h4>
-      <p>Has all staff permissions plus team oversight. Can view all attendance, mark/edit records, and manage billing.</p>
+      <p>Has all staff permissions plus team oversight. Can view all attendance, mark/edit records, assign tasks, and view Collections.</p>
       <div class="role-perms">
         <div class="perm">✓ All staff permissions</div>
         <div class="perm">✓ View all attendance</div>
         <div class="perm">✓ Mark/edit staff attendance</div>
         <div class="perm">✓ Manage all bills</div>
-        <div class="perm">✓ Export CSV reports</div>
+        <div class="perm">✓ Assign tasks to staff</div>
+        <div class="perm">✓ Edit payment on any task</div>
+        <div class="perm">✓ Collections analytics</div>
       </div>
     </div>
     <div class="role-card admin">
@@ -332,6 +356,7 @@
         <div class="perm">✓ Broadcast messages</div>
         <div class="perm">✓ Add / deactivate users</div>
         <div class="perm">✓ Permanent delete with cascade</div>
+        <div class="perm">✓ Delete tasks</div>
       </div>
     </div>
   </div>
@@ -469,8 +494,8 @@
 <!-- BILLING -->
 <section id="billing">
   <div class="section-label">Expense Management</div>
-  <div class="section-title">Fast bill submission</div>
-  <div class="section-desc">Staff submit expense bills with receipt uploads. Files go directly to cloud storage — bypassing server size limits for fast, reliable uploads.</div>
+  <div class="section-title">Bill submission + Collections analytics</div>
+  <div class="section-desc">Staff submit expense bills with receipt uploads. Admin and managers also get a full Collections tab showing payment data collected by field staff.</div>
 
   <div class="feature-row">
     <div class="feature-content">
@@ -501,6 +526,193 @@
           <div style="width:24px;height:24px;border-radius:50%;background:var(--lime);color:#000;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0">3</div>
           <div style="color:rgba(255,255,255,.8);font-size:.82rem">Public URL + metadata saved to database</div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-row reverse" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Collections Tab (Admin / Manager)</h3>
+      <p>A dedicated Collections tab in Billing gives managers full visibility into field payment performance — how much was collected, who's pending, and who to follow up with.</p>
+      <ul class="feature-list">
+        <li>Total Collected (₹) for the selected month</li>
+        <li>Pending count — tasks where payment was not collected</li>
+        <li>Collection Rate % — collected vs total due</li>
+        <li>Per-staff breakdown — who collected how much</li>
+        <li>Pending follow-up list with customer name + WhatsApp link</li>
+        <li>Month filter — see end-of-month pending calls easily</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">COLLECTIONS — MARCH 2026</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:rgba(52,211,153,.15);border-radius:8px;padding:8px;text-align:center">
+          <div style="color:#34d399;font-size:.65rem;font-weight:600">COLLECTED</div>
+          <div style="color:#fff;font-size:.9rem;font-weight:700">₹12,500</div>
+        </div>
+        <div style="background:rgba(248,113,113,.15);border-radius:8px;padding:8px;text-align:center">
+          <div style="color:#f87171;font-size:.65rem;font-weight:600">PENDING</div>
+          <div style="color:#fff;font-size:.9rem;font-weight:700">3</div>
+        </div>
+        <div style="background:rgba(104,77,244,.15);border-radius:8px;padding:8px;text-align:center">
+          <div style="color:#a78bfa;font-size:.65rem;font-weight:600">RATE</div>
+          <div style="color:#fff;font-size:.9rem;font-weight:700">75%</div>
+        </div>
+      </div>
+      <div class="mock-row" style="padding:8px 12px">
+        <div class="mock-avatar" style="background:#25D366;width:24px;height:24px;font-size:.6rem;display:flex;align-items:center;justify-content:center">W</div>
+        <div class="mock-text">
+          <div style="color:rgba(255,255,255,.7);font-size:.75rem">Ravi Kumar · ⚠ Pending</div>
+        </div>
+        <span style="color:#25D366;font-size:.7rem;font-weight:600">Call</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- TASKS -->
+<section id="tasks">
+  <div class="section-label">Field Operations</div>
+  <div class="section-title">Task assignment with payment collection</div>
+  <div class="section-desc">Tasks go beyond simple to-dos — they carry customer context, location, and payment expectations so field staff have everything they need in one card.</div>
+
+  <div class="feature-row">
+    <div class="feature-content">
+      <h3>Assign Tasks with Customer Info</h3>
+      <p>When creating a task, admin or manager can attach all the customer details the staff member will need in the field — no need to share separately over WhatsApp or calls.</p>
+      <ul class="feature-list">
+        <li>Title, description, priority, due date</li>
+        <li>Assign to any staff member</li>
+        <li>Amount to Collect (₹) — optional, triggers payment flow</li>
+        <li>Customer phone — tap to open WhatsApp chat</li>
+        <li>Location — paste Google Maps link or capture GPS now</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">TASK CARD</div>
+      <div style="background:rgba(255,255,255,.95);border-radius:12px;padding:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="color:#17184a;font-size:.85rem;font-weight:700">Deliver solar panel quote</span>
+          <span style="background:#fee2e2;color:#dc2626;font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:4px">urgent</span>
+          <span style="background:#ede9fe;color:#7c3aed;font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:4px">₹8,500 to collect</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <span style="background:#25D366;color:#fff;font-size:.7rem;padding:3px 8px;border-radius:6px">📞 9876543210</span>
+          <span style="background:#684df4;color:#fff;font-size:.7rem;padding:3px 8px;border-radius:6px">📍 Open Location</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="color:#6b7280;font-size:.7rem">👤 Suresh · Due: 2026-03-28</span>
+          <span style="background:#fef3c7;color:#92400e;font-size:.7rem;padding:2px 8px;border-radius:4px">In Progress</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-row reverse" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>Payment Modal on Completion</h3>
+      <p>When staff marks a task as "Done" and the task has an amount to collect, a payment modal appears automatically before the task completes — ensuring no payment goes unrecorded.</p>
+      <ul class="feature-list">
+        <li>Modal shows the expected collection amount</li>
+        <li>Staff chooses: ✅ Collected or ❌ Not Collected</li>
+        <li>If collected — enter actual amount received</li>
+        <li>If not collected — enter customer name for follow-up</li>
+        <li>Skip option if payment is handled separately</li>
+        <li>Admin/manager can edit payment status at any time</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">PAYMENT MODAL</div>
+      <div style="background:rgba(255,255,255,.95);border-radius:12px;padding:14px">
+        <div style="color:#17184a;font-size:.85rem;font-weight:700;margin-bottom:2px">Payment Collection</div>
+        <div style="color:#6b7280;font-size:.7rem;margin-bottom:4px">Deliver solar panel quote</div>
+        <div style="color:#684df4;font-size:.75rem;font-weight:600;margin-bottom:10px">Expected: ₹8,500</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="border:2px solid #22c55e;background:#f0fdf4;border-radius:8px;padding:8px;text-align:center;font-size:.75rem;color:#15803d;font-weight:600">✅ Collected</div>
+          <div style="border:2px solid #e5e7eb;border-radius:8px;padding:8px;text-align:center;font-size:.75rem;color:#9ca3af;font-weight:600">❌ Not Collected</div>
+        </div>
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:8px;font-size:.75rem;color:#374151">Amount: ₹8,500</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px">
+    <div class="section-desc" style="margin-bottom:16px;"><strong style="color:var(--navy)">Payment badge states on task cards:</strong></div>
+    <div class="status-grid">
+      <span class="status-pill" style="background:#ede9fe;color:#4c1d95">₹8,500 to collect</span>
+      <span class="status-pill" style="background:#d1fae5;color:#065f46">✓ ₹8,500 Collected</span>
+      <span class="status-pill" style="background:#fee2e2;color:#991b1b">⚠ Payment Pending · Ravi Kumar</span>
+      <span class="status-pill" style="background:#fff7ed;color:#9a3412">⏳ Payment not recorded</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-label">Team Communication</div>
+  <div class="section-title">Contact & WhatsApp tools</div>
+  <div class="section-desc">One place to find every team member's contact and a message generator for professional customer communication — no need to memorise details or dig through chats.</div>
+
+  <div class="feature-row">
+    <div class="feature-content">
+      <h3>Team Contacts Directory</h3>
+      <p>All staff phone numbers in a searchable list. Tap the WhatsApp button next to any contact to open a direct chat — no need for group adds or sharing numbers manually.</p>
+      <ul class="feature-list">
+        <li>Search by name or department</li>
+        <li>Shows role and department for each contact</li>
+        <li>Direct WhatsApp chat button (opens wa.me link)</li>
+        <li>Accessible to all roles including customers</li>
+      </ul>
+    </div>
+    <div class="feature-visual">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">CONTACTS</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,255,255,.95);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#684df4;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700">S</div>
+          <div style="flex:1">
+            <div style="color:#17184a;font-size:.8rem;font-weight:600">Suresh Kumar</div>
+            <div style="color:#6b7280;font-size:.7rem">staff · Sales</div>
+          </div>
+          <span style="background:#25D366;color:#fff;font-size:.7rem;padding:3px 9px;border-radius:6px;font-weight:600">Chat</span>
+        </div>
+        <div style="background:rgba(255,255,255,.95);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700">A</div>
+          <div style="flex:1">
+            <div style="color:#17184a;font-size:.8rem;font-weight:600">Anitha R.</div>
+            <div style="color:#6b7280;font-size:.7rem">manager · Operations</div>
+          </div>
+          <span style="background:#25D366;color:#fff;font-size:.7rem;padding:3px 9px;border-radius:6px;font-weight:600">Chat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-row reverse" style="margin-top:56px">
+    <div class="feature-content">
+      <h3>WhatsApp Message Generator</h3>
+      <p>Generate a clean, professional message to share with customers — site visit time, product details, pricing, and a custom note all formatted and ready to send on WhatsApp.</p>
+      <ul class="feature-list">
+        <li>Customer name, date, time, and purpose/reason</li>
+        <li>Optional product picker — pulls from product catalogue</li>
+        <li>Product image, price, description auto-included</li>
+        <li>Additional notes field for custom text</li>
+        <li>One-tap Copy or direct Share on WhatsApp</li>
+      </ul>
+    </div>
+    <div class="feature-visual" style="background: linear-gradient(135deg, #0d1117 0%, #1a1a3e 100%);">
+      <div style="color:var(--lime);font-size:.75rem;font-weight:700;margin-bottom:10px;letter-spacing:1px">MESSAGE PREVIEW</div>
+      <div style="background:rgba(255,255,255,.08);border-radius:10px;padding:12px;font-size:.75rem;color:rgba(255,255,255,.8);line-height:1.7;font-family:monospace">
+        Hello Ravi Kumar,<br><br>
+        Date: 2026-03-28 at 11:00 AM<br>
+        Purpose: Solar panel demo<br><br>
+        Product: SolarMax 5kW<br>
+        Price: ₹85,000<br>
+        Details: Grid-tie with battery backup<br><br>
+        — Alfanex Solutions
       </div>
     </div>
   </div>
@@ -556,6 +768,7 @@
         <li>Backdrop overlay closes drawer on tap outside</li>
         <li>Auto-detects screen size on load and resize</li>
         <li>Active route highlighted in sidebar</li>
+        <li>Hidden scrollbar — smooth scroll with no visual clutter</li>
       </ul>
     </div>
     <div class="feature-visual" style="padding: 20px; gap: 0;">
@@ -727,6 +940,42 @@
         <tr style="border-bottom:1px solid var(--border);background:#fafafa">
           <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Manage all bills</td>
           <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Assign tasks with customer info</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Record payment on task completion</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Edit payment status on any task</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">Collections analytics + follow-up list</td>
+          <td style="padding:13px 20px;color:#9ca3af">—</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">WhatsApp contacts directory</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+          <td style="padding:13px 20px;font-size:.875rem;color:var(--navy);font-weight:500">WhatsApp message generator</td>
+          <td style="padding:13px 20px;color:#34d399">✓</td>
           <td style="padding:13px 20px;color:#34d399">✓</td>
           <td style="padding:13px 20px;color:#34d399">✓</td>
         </tr>

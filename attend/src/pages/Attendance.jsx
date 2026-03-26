@@ -145,13 +145,15 @@ export default function Attendance() {
             onChange={e => setMonth(e.target.value)}
             className="px-3 py-2 rounded-lg border border-black/15 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#684df4]/30"
           />
-          <button
-            onClick={downloadCSV}
-            disabled={records.length === 0}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border border-black/15 text-black/60 hover:text-black disabled:opacity-30 transition flex items-center gap-1.5"
-          >
-            ↓ Download CSV
-          </button>
+          {isManager && (
+            <button
+              onClick={downloadCSV}
+              disabled={records.length === 0}
+              className="px-4 py-2 rounded-lg text-sm font-semibold border border-black/15 text-black/60 hover:text-black disabled:opacity-30 transition flex items-center gap-1.5"
+            >
+              ↓ Download CSV
+            </button>
+          )}
           {isManager && (
             <>
               <select

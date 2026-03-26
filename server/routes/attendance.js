@@ -10,6 +10,22 @@ const IST = 'Asia/Kolkata'
 const timeNow = () => new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: IST })
 const today = () => new Date().toLocaleDateString('en-CA', { timeZone: IST })
 
+// Auto-close yesterday's open attendance for the logged-in user
+async function autoCloseYesterday(userId) {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const yesterdayStr = d.toLocaleDateString('en-CA', { timeZone: IST })
+  const record = await prisma.attendance.findFirst({ where: { userId, date: yesterdayStr, checkOut: null } })
+  if (record && record.checkIn) {
+    await prisma.attendance.update({ where: { id: record.id }, data: { checkOut: '05:30 PM' } })
+    await prisma.notification.create({
+      data: { recipientId: userId, type: 'attendance', title: 'Auto checkout', message: 'yesterday record closed office 5:30 pm', link: '/attendance' }
+    })
+    return true
+  }
+  return false
+}
+
 // Check in
 router.post('/checkin', protect, async (req, res) => {
   const existing = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
@@ -75,7 +91,9 @@ router.get('/my', protect, async (req, res) => {
 
 // Today's status
 router.get('/today', protect, async (req, res) => {
+  const closed = await autoCloseYesterday(req.user.id)
   const record = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
+  if (closed) return res.json({ ...(record || {}), autoClosedYesterday: true })
   res.json(record || null)
 })
 

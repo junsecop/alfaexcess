@@ -228,6 +228,22 @@ app.post('/api/auth/avatar', protect, avatarUpload.single('avatar'), async (req,
 // ATTENDANCE ROUTES
 // ══════════════════════════════════════════════════════════════
 
+// Auto-close yesterday's open attendance for the logged-in user
+async function autoCloseYesterday(userId) {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  const yesterdayStr = d.toLocaleDateString('en-CA', { timeZone: IST })
+  const record = await db.attendance.findFirst({ where: { userId, date: yesterdayStr, checkOut: null } })
+  if (record && record.checkIn) {
+    await db.attendance.update({ where: { id: record.id }, data: { checkOut: '05:30 PM' } })
+    await db.notification.create({
+      data: { recipientId: userId, type: 'attendance', title: 'Auto checkout', message: 'yesterday record closed office 5:30 pm', link: '/attendance' }
+    })
+    return true
+  }
+  return false
+}
+
 app.post('/api/attendance/checkin', protect, async (req, res) => {
   const existing = await db.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
   if (existing) return res.status(400).json({ message: 'Already checked in today' })
@@ -295,7 +311,9 @@ app.get('/api/attendance/my', protect, async (req, res) => {
 })
 
 app.get('/api/attendance/today', protect, async (req, res) => {
+  const closed = await autoCloseYesterday(req.user.id)
   const record = await db.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date: today() } } })
+  if (closed) return res.json({ ...(record || {}), autoClosedYesterday: true })
   res.json(record || null)
 })
 

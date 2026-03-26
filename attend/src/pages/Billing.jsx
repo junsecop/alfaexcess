@@ -348,6 +348,23 @@ export default function Billing() {
     }
   }
 
+  const downloadCSV = () => {
+    const headers = ['Title', 'Type', 'Category', 'Amount', 'Status', 'Month', 'Submitted By', 'Admin Note']
+    const rows = bills.map(b => [
+      b.title || '', b.type || '', b.category || '',
+      b.amount || 0, b.status || '', b.month || '',
+      b.submittedBy?.name || '', b.adminMessage || '',
+    ])
+    const csv = [headers, ...rows].map(row => row.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `billing-${month}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const fetchAll = () => {
     if (isManager) {
       api.get(`/billing/all?month=${month}`).then(r => setBills(r.data))
@@ -378,14 +395,20 @@ export default function Billing() {
     <Layout title="Billing">
       <div className="max-w-5xl mx-auto space-y-5">
 
-        {/* Month picker + cleanup */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Month picker + actions */}
+        <div className="flex items-center gap-3 flex-wrap">
           <input type="month" value={month} onChange={e => setMonth(e.target.value)}
             className="px-3 py-2 rounded-xl border border-black/15 text-sm bg-white focus:outline-none focus:ring-2"
             style={{ '--tw-ring-color': '#684df4' }} />
+          {isManager && (
+            <button onClick={downloadCSV} disabled={bills.length === 0}
+              className="px-4 py-2 rounded-xl text-sm font-semibold border border-black/15 text-black/60 hover:text-black disabled:opacity-30 transition flex items-center gap-1.5">
+              ↓ Download CSV
+            </button>
+          )}
           {user?.role === 'admin' && (
             <button onClick={cleanupOldBills} disabled={cleaning}
-              className="px-4 py-2 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
+              className="ml-auto px-4 py-2 rounded-xl text-sm font-medium border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors">
               {cleaning ? 'Cleaning…' : 'Cleanup Old Bills'}
             </button>
           )}
