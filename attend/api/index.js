@@ -351,6 +351,29 @@ app.patch('/api/attendance/:id', protect, requireRole('admin', 'manager'), async
   res.json(record)
 })
 
+// Apply for leave (self)
+app.post('/api/attendance/leave', protect, async (req, res) => {
+  const { date, note } = req.body
+  if (!date) return res.status(400).json({ message: 'date is required' })
+  const existing = await db.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date } } })
+  if (existing) return res.status(400).json({ message: 'Attendance already recorded for this date' })
+  const record = await db.attendance.create({
+    data: { userId: req.user.id, date, status: 'leave', note: note || null },
+  })
+  const admins = await db.user.findMany({ where: { isActive: true }, select: { id: true, role: true } })
+  const targets = admins.filter(u => ['admin', 'manager'].includes(u.role))
+  if (targets.length > 0) {
+    await db.notification.createMany({
+      data: targets.map(a => ({
+        recipientId: a.id, type: 'attendance', title: 'Leave applied',
+        message: `${req.user.name} applied for leave on ${date}${note ? ': ' + note : ''}`,
+        link: '/attendance',
+      })),
+    })
+  }
+  res.status(201).json(record)
+})
+
 // Mark attendance for any staff (create or update)
 app.post('/api/attendance/mark', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { userId, date, status, note, checkIn, checkOut } = req.body
@@ -417,7 +440,7 @@ app.post('/api/billing', protect, async (req, res) => {
 app.get('/api/billing/my', protect, async (req, res) => {
   const { month, status } = req.query
   const bills = await db.bill.findMany({
-    where: { submittedById: req.user.id, ...(month && { month }), ...(status && { status }) },
+    where: { submittedById: req.user.id, ...(month && { month: { startsWith: month } }), ...(status && { status }) },
     orderBy: { createdAt: 'desc' },
   })
   res.json(bills)
@@ -426,7 +449,7 @@ app.get('/api/billing/my', protect, async (req, res) => {
 app.get('/api/billing/all', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month, status, type } = req.query
   const bills = await db.bill.findMany({
-    where: { ...(month && { month }), ...(status && { status }), ...(type && { type }) },
+    where: { ...(month && { month: { startsWith: month } }), ...(status && { status }), ...(type && { type }) },
     include: { submittedBy: { select: { name: true, email: true } }, approvedBy: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   })
@@ -435,7 +458,7 @@ app.get('/api/billing/all', protect, requireRole('admin', 'manager'), async (req
 
 app.get('/api/billing/summary', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month } = req.query
-  const bills = await db.bill.findMany({ where: { status: { in: ['approved', 'paid'] }, ...(month && { month }) } })
+  const bills = await db.bill.findMany({ where: { status: { in: ['approved', 'paid'] }, ...(month && { month: { startsWith: month } }) } })
   const summary = bills.reduce((acc, b) => { acc.total = (acc.total || 0) + b.amount; acc[b.type] = (acc[b.type] || 0) + b.amount; return acc }, {})
   res.json(summary)
 })
@@ -458,12 +481,10 @@ app.delete('/api/billing/cleanup', protect, requireRole('admin'), async (req, re
   const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: IST }).slice(0, 7)
   const bills = await db.bill.findMany({ where: {} })
   const old = bills.filter(b => b.month && b.month < currentMonth && ['approved', 'paid'].includes(b.status))
-  for (const bill of old) {
-    if (bill.fileUrl) {
-      const filePath = bill.fileUrl.split('/uploads/').pop()
-      if (filePath) await sb.storage.from('recept').remove([filePath])
-    }
-    await db.bill.delete({ where: { id: bill.id } })
+  const filePaths = old.filter(b => b.fileUrl).map(b => b.fileUrl.split('/object/public/recept/').pop()).filter(Boolean)
+  if (filePaths.length > 0) await sb.storage.from('recept').remove(filePaths)
+  if (old.length > 0) {
+    await db.bill.deleteMany({ where: { id: { in: old.map(b => b.id) } } })
   }
   res.json({ count: old.length })
 })

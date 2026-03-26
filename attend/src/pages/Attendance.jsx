@@ -193,7 +193,7 @@ export default function Attendance() {
             { label: 'Leave',    key: 'leave',      color: '#2563eb' },
             { label: 'Half Day', key: 'half_day',  color: '#7c3aed' },
           ]
-          const working = (counts.present || 0) + (counts.late || 0) + (counts.half_day || 0)
+          const working = (counts.present || 0) + (counts.late || 0) + (counts.half_day || 0) * 0.5
           return (
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               <div className="bg-white rounded-2xl p-4 border border-black/8 sm:col-span-1 col-span-3">

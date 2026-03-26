@@ -23,7 +23,7 @@ function ProductModal({ product, onClose, onSaved }) {
       Object.entries(form).forEach(([k, v]) => fd.append(k, v))
       if (image) fd.append('image', image)
       const r = editing
-        ? await api.put(`/products/${product._id}`, fd)
+        ? await api.put(`/products/${product.id}`, fd)
         : await api.post('/products', fd)
       onSaved(r.data)
       onClose()
@@ -115,7 +115,7 @@ export default function Products() {
             </div>
           )}
           {filtered.map(p => (
-            <div key={p._id} className="bg-white rounded-2xl border border-black/8 overflow-hidden">
+            <div key={p.id} className="bg-white rounded-2xl border border-black/8 overflow-hidden">
               {p.imageUrl ? (
                 <img src={p.imageUrl} alt={p.name} className="w-full h-36 object-cover" />
               ) : (
@@ -136,7 +136,7 @@ export default function Products() {
                       <button onClick={() => { setEditing(p); setShowModal(true) }}
                         className="text-xs text-black/40 hover:text-black">Edit</button>
                       {user?.role === 'admin' && (
-                        <button onClick={() => handleDelete(p._id)}
+                        <button onClick={() => handleDelete(p.id)}
                           className="text-xs text-red-400 hover:text-red-600">Del</button>
                       )}
                     </div>
@@ -154,7 +154,7 @@ export default function Products() {
           onClose={() => setShowModal(false)}
           onSaved={saved => {
             setProducts(ps => editing
-              ? ps.map(p => p._id === saved._id ? saved : p)
+              ? ps.map(p => p.id === saved.id ? saved : p)
               : [saved, ...ps]
             )
           }}

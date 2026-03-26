@@ -62,7 +62,7 @@ router.get('/my', protect, async (req, res) => {
   const bills = await prisma.bill.findMany({
     where: {
       submittedById: req.user.id,
-      ...(month && { month }),
+      ...(month && { month: { startsWith: month } }),
       ...(status && { status }),
     },
     orderBy: { createdAt: 'desc' },
@@ -75,7 +75,7 @@ router.get('/all', protect, requireRole('admin', 'manager'), async (req, res) =>
   const { month, status, type } = req.query
   const bills = await prisma.bill.findMany({
     where: {
-      ...(month && { month }),
+      ...(month && { month: { startsWith: month } }),
       ...(status && { status }),
       ...(type && { type }),
     },
@@ -111,12 +111,11 @@ router.patch('/:id/approve', protect, requireRole('admin', 'manager'), async (re
 // Cleanup: delete all approved/paid bills from previous months (admin only)
 router.delete('/cleanup', protect, requireRole('admin'), async (req, res) => {
   const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }).slice(0, 7)
-  const old = await prisma.bill.findMany({
-    where: { status: { in: ['approved', 'paid'] }, month: { lt: currentMonth } },
-  })
-  await prisma.bill.deleteMany({
-    where: { id: { in: old.map(b => b.id) } },
-  })
+  const allBills = await prisma.bill.findMany({})
+  const old = allBills.filter(b => b.month && b.month < currentMonth && ['approved', 'paid'].includes(b.status))
+  if (old.length > 0) {
+    await prisma.bill.deleteMany({ where: { id: { in: old.map(b => b.id) } } })
+  }
   res.json({ count: old.length })
 })
 
@@ -136,7 +135,7 @@ router.delete('/:id', protect, async (req, res) => {
 router.get('/summary', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { month } = req.query
   const bills = await prisma.bill.findMany({
-    where: { status: { in: ['approved', 'paid'] }, ...(month && { month }) },
+    where: { status: { in: ['approved', 'paid'] }, ...(month && { month: { startsWith: month } }) },
   })
   const summary = bills.reduce((acc, b) => {
     acc.total = (acc.total || 0) + b.amount

@@ -23,6 +23,9 @@ export default function Users() {
   const [pwError, setPwError] = useState('')
   const [pwSuccess, setPwSuccess] = useState('')
 
+  // Only send permission fields to backend when admin explicitly changed them
+  const [permissionsChanged, setPermissionsChanged] = useState(false)
+
   // Delete modal
   const [deleteModal, setDeleteModal] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -45,6 +48,7 @@ export default function Users() {
   const openEdit = (u) => {
     setEditing(u)
     setForm({ name: u.name, email: u.email || '', password: '', role: u.role, department: u.department || '', phone: u.phone || '', canDownloadCsv: u.canDownloadCsv ?? null, canEditAttendance: u.canEditAttendance ?? null, requiresAttendance: u.requiresAttendance ?? true })
+    setPermissionsChanged(false)
     setError('')
     setShowModal(true)
   }
@@ -55,12 +59,16 @@ export default function Users() {
     setError('')
     try {
       if (editing) {
-        await api.put(`/auth/users/${editing.id}`, { name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone, canDownloadCsv: form.canDownloadCsv, canEditAttendance: form.canEditAttendance, requiresAttendance: form.requiresAttendance })
+        const { data } = await api.put(`/auth/users/${editing.id}`, {
+          name: form.name, email: form.email, role: form.role, department: form.department, phone: form.phone,
+          ...(permissionsChanged && { canDownloadCsv: form.canDownloadCsv, canEditAttendance: form.canEditAttendance, requiresAttendance: form.requiresAttendance }),
+        })
+        setUsers(us => us.map(u => u.id === editing.id ? { ...u, ...data.user } : u))
       } else {
         await api.post('/auth/create-user', form)
+        load()
       }
       setShowModal(false)
-      load()
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save')
     } finally {
@@ -356,7 +364,7 @@ export default function Users() {
                         <div className="flex gap-1">
                           {[{ val: null, text: 'Default' }, { val: true, text: 'Allow' }, { val: false, text: 'Deny' }].map(opt => (
                             <button key={String(opt.val)} type="button"
-                              onClick={() => setForm(f => ({ ...f, [key]: opt.val }))}
+                              onClick={() => { setForm(f => ({ ...f, [key]: opt.val })); setPermissionsChanged(true) }}
                               className={`px-2 py-1 rounded text-xs font-medium transition ${
                                 form[key] === opt.val
                                   ? opt.val === false ? 'bg-red-100 text-red-600' : opt.val === true ? 'bg-green-100 text-green-700' : 'bg-[#684df4]/10 text-[#684df4]'
@@ -375,7 +383,7 @@ export default function Users() {
                       <p className="text-xs text-black/30">Uncheck to hide check-in/out for this user</p>
                     </div>
                     <button type="button"
-                      onClick={() => setForm(f => ({ ...f, requiresAttendance: !f.requiresAttendance }))}
+                      onClick={() => { setForm(f => ({ ...f, requiresAttendance: !f.requiresAttendance })); setPermissionsChanged(true) }}
                       className={`relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors ${form.requiresAttendance ? 'bg-[#684df4]' : 'bg-black/20'}`}>
                       <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform mt-0.5 ${form.requiresAttendance ? 'translate-x-4' : 'translate-x-0.5'}`} />
                     </button>

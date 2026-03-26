@@ -24,7 +24,7 @@ const BILL_TYPES = ['electricity', 'water', 'rent', 'salary', 'misc', 'customer'
 
 // ── Submit Bill Form ──────────────────────────────────────────
 function SubmitBill({ onSubmitted }) {
-  const [form, setForm] = useState({ title: '', type: 'misc', amount: '', month: new Date().toISOString().slice(0, 7), category: '' })
+  const [form, setForm] = useState({ title: '', type: 'misc', amount: '', month: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), category: '' })
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
@@ -68,7 +68,7 @@ function SubmitBill({ onSubmitted }) {
       const r = await api.post('/billing', { ...form, fileUrl, fileName })
       onSubmitted(r.data)
       setMsg('Bill submitted successfully!')
-      setForm({ title: '', type: 'misc', amount: '', month: new Date().toISOString().slice(0, 7), category: '' })
+      setForm({ title: '', type: 'misc', amount: '', month: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }), category: '' })
       setFile(null)
     } catch (err) {
       setMsg(err.response?.data?.message || err.message || 'Failed')
@@ -101,8 +101,8 @@ function SubmitBill({ onSubmitted }) {
               value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
           </div>
           <div>
-            <label className="text-xs font-medium text-black/50 mb-1 block">Month</label>
-            <input type="month" className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm"
+            <label className="text-xs font-medium text-black/50 mb-1 block">Date</label>
+            <input type="date" className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm"
               value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))} />
           </div>
           <div>
@@ -155,7 +155,7 @@ function BillRow({ bill, onAction, isManager }) {
           <p className="font-semibold text-sm" style={{ color: '#17184a' }}>{bill.title}</p>
           <div className="flex flex-wrap gap-2 mt-1 items-center">
             <span className="text-xs text-black/40 capitalize">{bill.type}</span>
-            {bill.month && <span className="text-xs text-black/40">· {bill.month}</span>}
+            {bill.month && <span className="text-xs text-black/40">· {bill.month.length === 10 ? (() => { const [y,m,d] = bill.month.split('-'); return `${d}/${m}/${y.slice(2)}` })() : bill.month}</span>}
             {isManager && bill.submittedBy && <span className="text-xs text-black/40">· {bill.submittedBy.name}</span>}
           </div>
           {bill.adminMessage && (

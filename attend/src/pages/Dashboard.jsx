@@ -23,6 +23,13 @@ export default function Dashboard() {
   const [showCheckoutMenu, setShowCheckoutMenu] = useState(false)
   const [msg, setMsg] = useState('')
 
+  // Leave modal
+  const [showLeaveModal, setShowLeaveModal] = useState(false)
+  const [leaveDate, setLeaveDate] = useState('')
+  const [leaveNote, setLeaveNote] = useState('')
+  const [leaveLoading, setLeaveLoading] = useState(false)
+  const [leaveMsg, setLeaveMsg] = useState('')
+
   // Location modal state
   const [showLocationModal, setShowLocationModal] = useState(false)
   const [locationName, setLocationName] = useState('')
@@ -96,6 +103,22 @@ export default function Dashboard() {
       setMsg(e.response?.data?.message || 'Error')
     } finally {
       setCheckingOut(false)
+    }
+  }
+
+  const handleApplyLeave = async (e) => {
+    e.preventDefault()
+    setLeaveLoading(true)
+    setLeaveMsg('')
+    try {
+      await api.post('/attendance/leave', { date: leaveDate, note: leaveNote.trim() || undefined })
+      setLeaveMsg('Leave applied successfully!')
+      setLeaveDate('')
+      setLeaveNote('')
+    } catch (err) {
+      setLeaveMsg(err.response?.data?.message || 'Failed to apply leave')
+    } finally {
+      setLeaveLoading(false)
     }
   }
 
@@ -179,7 +202,7 @@ export default function Dashboard() {
             )}
 
             {/* Buttons */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <button
                 onClick={startCheckIn}
                 disabled={!!today?.checkIn || checkingIn}
@@ -232,6 +255,14 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            {user?.role !== 'admin' && (
+              <button
+                onClick={() => { setShowLeaveModal(true); setLeaveMsg(''); setLeaveDate(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })) }}
+                className="w-full mt-2 py-2.5 rounded-xl text-sm font-semibold border border-blue-200 text-blue-600 hover:bg-blue-50 transition"
+              >
+                Apply for Leave
+              </button>
+            )}
           </div>
         )}
 
@@ -269,6 +300,40 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Leave application modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-serif text-lg font-medium mb-1" style={{ color: '#17184a' }}>Apply for Leave</h3>
+            <p className="text-xs text-black/40 mb-4">Admin will be notified of your leave request</p>
+            <form onSubmit={handleApplyLeave} className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Date *</label>
+                <input required type="date" className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm"
+                  value={leaveDate} onChange={e => setLeaveDate(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-black/50 mb-1 block">Reason (optional)</label>
+                <input type="text" placeholder="e.g. Sick, Personal…" className="w-full px-3 py-2.5 border border-black/15 rounded-xl text-sm"
+                  value={leaveNote} onChange={e => setLeaveNote(e.target.value)} />
+              </div>
+              {leaveMsg && (
+                <p className={`text-xs px-3 py-2 rounded-lg ${leaveMsg.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>{leaveMsg}</p>
+              )}
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowLeaveModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-black/15 text-sm text-black/50">Cancel</button>
+                <button type="submit" disabled={leaveLoading}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: '#2563eb' }}>
+                  {leaveLoading ? 'Applying…' : 'Apply Leave'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Location check-in modal */}
       {showLocationModal && (

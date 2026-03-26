@@ -129,6 +129,26 @@ router.patch('/:id', protect, requireRole('admin', 'manager'), async (req, res) 
   res.json(record)
 })
 
+// Apply for leave (self) — any authenticated user
+router.post('/leave', protect, async (req, res) => {
+  const { date, note } = req.body
+  if (!date) return res.status(400).json({ message: 'date is required' })
+  const existing = await prisma.attendance.findUnique({ where: { userId_date: { userId: req.user.id, date } } })
+  if (existing) return res.status(400).json({ message: 'Attendance already recorded for this date' })
+  const record = await prisma.attendance.create({
+    data: { userId: req.user.id, date, status: 'leave', note: note || null },
+  })
+  const admins = await prisma.user.findMany({ where: { role: { in: ['admin', 'manager'] }, isActive: true }, select: { id: true } })
+  await prisma.notification.createMany({
+    data: admins.map(a => ({
+      recipientId: a.id, type: 'attendance', title: 'Leave applied',
+      message: `${req.user.name} applied for leave on ${date}${note ? ': ' + note : ''}`,
+      link: '/attendance',
+    })),
+  })
+  res.status(201).json(record)
+})
+
 // Mark / set attendance for any staff (admin/manager)
 router.post('/mark', protect, requireRole('admin', 'manager'), async (req, res) => {
   const { userId, date, status, note, checkIn, checkOut } = req.body
