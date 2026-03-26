@@ -7,7 +7,7 @@ import { protect, requireRole } from '../middleware/auth.js'
 import { syncBillsToSheet } from '../utils/sheets.js'
 import { createClient } from '@supabase/supabase-js'
 
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
 const router = express.Router()
 
@@ -23,9 +23,9 @@ router.post('/upload-url', protect, async (req, res) => {
   if (!fileName) return res.status(400).json({ message: 'fileName required' })
   const ext = path.extname(fileName)
   const filePath = `bills/${uuidv4()}${ext}`
-  const { data, error } = await sb.storage.from('uploads').createSignedUploadUrl(filePath)
+  const { data, error } = await sb.storage.from('recept').createSignedUploadUrl(filePath)
   if (error) return res.status(500).json({ message: error.message })
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
   res.json({ signedUrl: data.signedUrl, token: data.token, filePath, publicUrl })
 })
 

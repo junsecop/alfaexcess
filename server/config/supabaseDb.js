@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 const sb = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.SUPABASE_SERVICE_KEY
 )
 
 // Which tables have an updatedAt column

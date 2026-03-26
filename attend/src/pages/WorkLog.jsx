@@ -112,6 +112,16 @@ export default function WorkLog() {
     } catch {}
   }
 
+  const handleDelete = async (task) => {
+    if (!confirm(`Delete task "${task.title}"?`)) return
+    try {
+      await api.delete(`/tasks/${task.id}`)
+      setTasks(ts => ts.filter(t => t.id !== task.id))
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete')
+    }
+  }
+
   return (
     <Layout title="Work Log">
       <div className="max-w-5xl mx-auto space-y-5">
@@ -174,6 +184,12 @@ export default function WorkLog() {
                       <option value="done">Done</option>
                       {isManager && <option value="cancelled">Cancelled</option>}
                     </select>
+                  )}
+                  {user?.role === 'admin' && (
+                    <button onClick={() => handleDelete(task)}
+                      className="text-xs px-2 py-1 rounded border border-red-100 text-red-400 hover:text-red-600 hover:border-red-300 transition">
+                      Delete
+                    </button>
                   )}
                 </div>
               </div>

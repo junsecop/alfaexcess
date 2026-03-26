@@ -16,7 +16,8 @@
       "Bash(rm -rf \"c:/Users/albin/Desktop/alfanex.in/attendece app/server-backup\")",
       "Bash(node --input-type=module --eval \"import ''''./index.js''''\")",
       "Bash(cd /c/Users/albin/Desktop/alfanex.in/attendece app/attend)",
-      "Bash(find . -maxdepth 2 -not -path */node_modules/* -type d)"
+      "Bash(find . -maxdepth 2 -not -path */node_modules/* -type d)",
+      "Bash(grep -l \"router\\\\|app\\\\.\" /c/Users/albin/Desktop/alfanex.in/attendece app/server/routes/*.js)"
     ]
   }
 }

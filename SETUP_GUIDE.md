@@ -31,7 +31,7 @@ This creates all 7 tables and disables RLS automatically.
 
 1. In Supabase → click **Storage** in left sidebar
 2. Click **New Bucket**
-3. Name it exactly: `uploads`
+3. Name it exactly: `recept`
 4. Toggle **Public bucket** → ON
 5. Click **Save**
 

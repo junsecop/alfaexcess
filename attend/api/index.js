@@ -39,9 +39,9 @@ const uploadToStorage = async (file, folder) => {
   const ext = path.extname(file.originalname)
   const storedName = `${uuidv4()}${ext}`
   const filePath = `${folder}/${storedName}`
-  const { error } = await sb.storage.from('uploads').upload(filePath, file.buffer, { contentType: file.mimetype })
+  const { error } = await sb.storage.from('recept').upload(filePath, file.buffer, { contentType: file.mimetype })
   if (error) throw new Error(error.message)
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
   return { storedName, publicUrl, filePath }
 }
 
@@ -217,9 +217,9 @@ app.post('/api/auth/avatar', protect, avatarUpload.single('avatar'), async (req,
   if (!req.file) return res.status(400).json({ message: 'No file provided' })
   const ext = path.extname(req.file.originalname)
   const filePath = `avatars/${req.user.id}${ext}`
-  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true })
+  const { error } = await sb.storage.from('recept').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true })
   if (error) return res.status(500).json({ message: error.message })
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
   const user = await db.user.update({ where: { id: req.user.id }, data: { avatar: publicUrl } })
   res.json({ user: safeUser(user) })
 })
@@ -371,9 +371,9 @@ app.post('/api/billing/upload-url', protect, async (req, res) => {
   if (!fileName) return res.status(400).json({ message: 'fileName required' })
   const ext = path.extname(fileName)
   const filePath = `bills/${uuidv4()}${ext}`
-  const { data, error } = await sb.storage.from('uploads').createSignedUploadUrl(filePath)
+  const { data, error } = await sb.storage.from('recept').createSignedUploadUrl(filePath)
   if (error) return res.status(500).json({ message: error.message })
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
   res.json({ signedUrl: data.signedUrl, token: data.token, filePath, publicUrl })
 })
 
@@ -438,7 +438,7 @@ app.delete('/api/billing/cleanup', protect, requireRole('admin'), async (req, re
   for (const bill of old) {
     if (bill.fileUrl) {
       const filePath = bill.fileUrl.split('/uploads/').pop()
-      if (filePath) await sb.storage.from('uploads').remove([filePath])
+      if (filePath) await sb.storage.from('recept').remove([filePath])
     }
     await db.bill.delete({ where: { id: bill.id } })
   }
@@ -483,7 +483,7 @@ app.get('/api/uploads', protect, requireRole('admin', 'manager'), async (req, re
 app.delete('/api/uploads/:id', protect, requireRole('admin'), async (req, res) => {
   const doc = await db.upload.findUnique({ where: { id: req.params.id } })
   if (!doc) return res.status(404).json({ message: 'Not found' })
-  await sb.storage.from('uploads').remove([`docs/${doc.storedName}`])
+  await sb.storage.from('recept').remove([`docs/${doc.storedName}`])
   await db.upload.delete({ where: { id: req.params.id } })
   res.json({ message: 'Deleted' })
 })

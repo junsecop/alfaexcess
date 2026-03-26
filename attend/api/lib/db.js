@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { v4 as uuidv4 } from 'uuid'
 
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
 const HAS_UPDATED_AT = new Set(['User', 'Task', 'Bill', 'Product'])
 

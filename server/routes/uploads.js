@@ -8,7 +8,7 @@ import { protect, requireRole } from '../middleware/auth.js'
 
 const router = express.Router()
 
-const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
 
 // Keep file in memory for Supabase upload
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } })
@@ -22,13 +22,13 @@ router.post('/', protect, requireRole('admin', 'manager'), upload.single('file')
   const storedName = `${uuidv4()}${ext}`
   const filePath = `docs/${storedName}`
 
-  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, {
+  const { error } = await sb.storage.from('recept').upload(filePath, req.file.buffer, {
     contentType: req.file.mimetype,
     upsert: false,
   })
   if (error) return res.status(500).json({ message: error.message })
 
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
 
   const doc = await prisma.upload.create({
     data: {
@@ -67,7 +67,7 @@ router.delete('/:id', protect, requireRole('admin'), async (req, res) => {
 
   // Remove from Supabase Storage
   const filePath = `docs/${doc.storedName}`
-  await sb.storage.from('uploads').remove([filePath])
+  await sb.storage.from('recept').remove([filePath])
 
   await prisma.upload.delete({ where: { id: req.params.id } })
   res.json({ message: 'Deleted' })

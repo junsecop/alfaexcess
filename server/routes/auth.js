@@ -190,12 +190,12 @@ router.post('/avatar', protect, avatarUpload.single('avatar'), async (req, res) 
   if (!req.file) return res.status(400).json({ message: 'No file provided' })
   const ext = path.extname(req.file.originalname)
   const filePath = `avatars/${req.user.id}${ext}`
-  const { error } = await sb.storage.from('uploads').upload(filePath, req.file.buffer, {
+  const { error } = await sb.storage.from('recept').upload(filePath, req.file.buffer, {
     contentType: req.file.mimetype,
     upsert: true,
   })
   if (error) return res.status(500).json({ message: error.message })
-  const { data: { publicUrl } } = sb.storage.from('uploads').getPublicUrl(filePath)
+  const { data: { publicUrl } } = sb.storage.from('recept').getPublicUrl(filePath)
   const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatar: publicUrl } })
   res.json({ user: safeUser(user) })
 })
