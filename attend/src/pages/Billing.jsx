@@ -3,6 +3,15 @@ import Layout from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
+function parsePayment(tags = []) {
+  const payment  = tags.find(t => t.startsWith('payment:'))?.slice(8) || null  // 'collected' | 'pending'
+  const paidAmt  = tags.find(t => t.startsWith('paidamt:'))?.slice(8) || ''
+  const collect  = tags.find(t => t.startsWith('collect:'))?.slice(8) || ''
+  const phone    = tags.find(t => t.startsWith('phone:'))?.slice(6) || ''
+  const customer = tags.find(t => t.startsWith('customer:'))?.slice(9) || ''
+  return { payment, paidAmt, collect, phone, customer }
+}
+
 const STATUS_COLORS = {
   pending:  'bg-yellow-100 text-yellow-700',
   approved: 'bg-green-100 text-green-700',
@@ -323,6 +332,7 @@ export default function Billing() {
   const [summary, setSummary] = useState(null)
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7))
   const [cleaning, setCleaning] = useState(false)
+  const [doneTasks, setDoneTasks] = useState([])
 
   const cleanupOldBills = async () => {
     if (!confirm('Delete all approved/paid bills from previous months? This cannot be undone.')) return
@@ -342,6 +352,7 @@ export default function Billing() {
     if (isManager) {
       api.get(`/billing/all?month=${month}`).then(r => setBills(r.data))
       api.get(`/billing/summary?month=${month}`).then(r => setSummary(r.data))
+      api.get('/tasks/all?status=done').then(r => setDoneTasks(r.data)).catch(() => {})
     }
     api.get(`/billing/my?month=${month}`).then(r => setMyBills(r.data))
   }
@@ -352,8 +363,9 @@ export default function Billing() {
     ? [
         { key: 'overview',  label: 'Overview' },
         { key: 'approvals', label: `Approvals ${bills.filter(b => b.status === 'pending').length ? `(${bills.filter(b => b.status === 'pending').length})` : ''}` },
-        { key: 'spending',  label: 'Spending' },
-        { key: 'documents', label: 'Documents' },
+        { key: 'spending',     label: 'Spending' },
+        { key: 'collections',  label: 'Collections' },
+        { key: 'documents',    label: 'Documents' },
         { key: 'submit',    label: 'Submit Bill' },
         { key: 'mybills',   label: 'My Bills' },
       ]
@@ -459,6 +471,133 @@ export default function Billing() {
             ) : <p className="text-sm text-black/30">No approved spending data</p>}
           </div>
         )}
+
+        {/* Collections */}
+        {tab === 'collections' && isManager && (() => {
+          const monthTasks = doneTasks.filter(t =>
+            t.completedAt && t.completedAt.slice(0, 7) === month
+          )
+          const tasksWithPayment = monthTasks.filter(t => (t.tags || []).some(tag => tag.startsWith('payment:')))
+          const collected = tasksWithPayment.filter(t => parsePayment(t.tags).payment === 'collected')
+          const pending   = tasksWithPayment.filter(t => parsePayment(t.tags).payment === 'pending')
+          const totalCollected = collected.reduce((sum, t) => {
+            const { paidAmt, collect } = parsePayment(t.tags)
+            return sum + (Number(paidAmt || collect) || 0)
+          }, 0)
+          const rate = tasksWithPayment.length ? Math.round((collected.length / tasksWithPayment.length) * 100) : 0
+
+          // Per-staff breakdown
+          const byStaff = {}
+          collected.forEach(t => {
+            const name = t.assignedTo?.name || 'Unknown'
+            const { paidAmt, collect } = parsePayment(t.tags)
+            byStaff[name] = (byStaff[name] || 0) + (Number(paidAmt || collect) || 0)
+          })
+
+          return (
+            <div className="space-y-5">
+              {/* Summary cards */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-2xl p-5 border border-black/8">
+                  <p className="text-xs text-black/40 uppercase tracking-wide mb-2">Total Collected</p>
+                  <p className="font-serif text-2xl font-semibold text-green-600">₹{totalCollected.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="bg-white rounded-2xl p-5 border border-black/8">
+                  <p className="text-xs text-black/40 uppercase tracking-wide mb-2">Pending</p>
+                  <p className="font-serif text-2xl font-semibold text-red-500">{pending.length} visits</p>
+                </div>
+                <div className="bg-white rounded-2xl p-5 border border-black/8">
+                  <p className="text-xs text-black/40 uppercase tracking-wide mb-2">Collection Rate</p>
+                  <p className="font-serif text-2xl font-semibold" style={{ color: '#684df4' }}>{rate}%</p>
+                </div>
+              </div>
+
+              {/* Staff breakdown */}
+              {Object.keys(byStaff).length > 0 && (
+                <div className="bg-white rounded-2xl p-5 border border-black/8">
+                  <p className="text-sm font-semibold mb-4" style={{ color: '#17184a' }}>Staff Collections</p>
+                  <div className="space-y-3">
+                    {Object.entries(byStaff).sort((a,b) => b[1]-a[1]).map(([name, amt]) => (
+                      <div key={name} className="flex items-center gap-4">
+                        <span className="text-sm text-black/60 w-32 truncate">{name}</span>
+                        <div className="flex-1 h-2 bg-black/8 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${Math.min(100,(amt/totalCollected)*100)}%`, background: '#684df4' }} />
+                        </div>
+                        <span className="text-sm font-semibold w-24 text-right text-green-600">₹{amt.toLocaleString('en-IN')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Collected list */}
+              {collected.length > 0 && (
+                <div className="bg-white rounded-2xl p-5 border border-black/8">
+                  <p className="text-sm font-semibold mb-3" style={{ color: '#17184a' }}>Collected Payments</p>
+                  <div className="space-y-2">
+                    {collected.map(t => {
+                      const { paidAmt, collect, phone } = parsePayment(t.tags)
+                      const amt = paidAmt || collect
+                      return (
+                        <div key={t.id} className="flex items-center justify-between gap-3 py-2 border-b border-black/5 last:border-0">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#17184a] truncate">{t.title}</p>
+                            <p className="text-xs text-black/40">{t.assignedTo?.name}{t.completedAt ? ` · ${new Date(t.completedAt).toLocaleDateString('en-IN')}` : ''}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {phone && (
+                              <a href={`https://wa.me/91${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                                className="text-xs px-2 py-1 rounded-lg font-medium text-white" style={{ background: '#25D366' }}>📞</a>
+                            )}
+                            <span className="text-sm font-bold text-green-600">₹{Number(amt).toLocaleString('en-IN')}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Pending follow-up list */}
+              {pending.length > 0 && (
+                <div className="bg-white rounded-2xl p-5 border border-red-100">
+                  <p className="text-sm font-semibold mb-1" style={{ color: '#17184a' }}>⚠ Pending Follow-up Calls</p>
+                  <p className="text-xs text-black/40 mb-3">These customers haven't paid yet — call them before month end</p>
+                  <div className="space-y-2">
+                    {pending.map(t => {
+                      const { phone, customer } = parsePayment(t.tags)
+                      return (
+                        <div key={t.id} className="flex items-center justify-between gap-3 py-2 border-b border-black/5 last:border-0">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#17184a] truncate">{t.title}</p>
+                            <p className="text-xs text-black/40">
+                              {customer && <span className="font-medium text-black/60">{customer} · </span>}
+                              {t.assignedTo?.name}{t.completedAt ? ` · ${new Date(t.completedAt).toLocaleDateString('en-IN')}` : ''}
+                            </p>
+                          </div>
+                          {phone && (
+                            <a href={`https://wa.me/91${phone.replace(/\D/g,'')}`} target="_blank" rel="noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white shrink-0"
+                              style={{ background: '#25D366' }}>
+                              <svg viewBox="0 0 32 32" fill="currentColor" width="12" height="12">
+                                <path d="M16 0C7.164 0 0 7.164 0 16c0 2.812.732 5.45 2.017 7.74L0 32l8.51-2.234A15.93 15.93 0 0016 32c8.836 0 16-7.164 16-16S24.836 0 16 0zm7.993 22.274c-.33.927-1.942 1.791-2.657 1.84-.714.05-1.366.283-4.64-.964-3.916-1.499-6.367-5.5-6.558-5.756-.19-.256-1.571-2.087-1.571-3.981s.996-2.823 1.35-3.21c.352-.386.768-.482 1.024-.482.256 0 .512.002.736.013.237.011.555-.09.87.665.33.796 1.12 2.742 1.217 2.942.097.2.16.434.033.7-.129.27-.194.434-.385.668-.192.234-.403.523-.576.703-.192.2-.39.417-.168.817.222.4.988 1.628 2.121 2.637 1.457 1.299 2.687 1.701 3.087 1.894.4.192.633.16.865-.097.232-.255.992-1.155 1.257-1.553.265-.397.53-.33.896-.198.366.13 2.321 1.094 2.72 1.294.399.2.665.3.764.466.097.168.097.966-.233 1.893z"/>
+                              </svg>
+                              Call
+                            </a>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {tasksWithPayment.length === 0 && (
+                <p className="text-sm text-black/30 text-center py-10">No payment records for {month} — they appear when staff complete tasks and record payment</p>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Documents */}
         {tab === 'documents' && isManager && <Documents />}

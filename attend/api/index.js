@@ -567,7 +567,11 @@ app.patch('/api/tasks/:id/status', protect, async (req, res) => {
   if (!isAssignee && !isManager) return res.status(403).json({ message: 'Access denied' })
   const updated = await db.task.update({
     where: { id: req.params.id },
-    data: { status: req.body.status, ...(req.body.status === 'done' && { completedAt: new Date() }) },
+    data: {
+      status: req.body.status,
+      ...(req.body.status === 'done' && { completedAt: new Date() }),
+      ...(req.body.tags !== undefined && { tags: req.body.tags }),
+    },
   })
   res.json(updated)
 })

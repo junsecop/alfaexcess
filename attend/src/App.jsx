@@ -12,6 +12,7 @@ import Products from './pages/Products'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import Users from './pages/Users'
+import WhatsApp from './pages/WhatsApp'
 
 export default function App() {
   return (
@@ -46,6 +47,9 @@ export default function App() {
           } />
           <Route path="/settings" element={
             <PrivateRoute><Settings /></PrivateRoute>
+          } />
+          <Route path="/whatsapp" element={
+            <PrivateRoute><WhatsApp /></PrivateRoute>
           } />
 
           <Route path="*" element={<Navigate to="/" replace />} />

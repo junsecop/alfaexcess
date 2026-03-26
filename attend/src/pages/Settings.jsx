@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 
 export default function Settings() {
-  const { user, setUser } = useAuth()
+  const { user, setUser, logout } = useAuth()
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -105,10 +107,19 @@ export default function Settings() {
             <div>
               <p className="font-semibold text-sm" style={{ color: '#17184a' }}>{user?.name}</p>
               <p className="text-xs text-black/40 capitalize mt-0.5">{user?.role}{user?.department ? ` · ${user.department}` : ''}</p>
-              <button onClick={() => fileRef.current.click()} className="text-xs mt-1 font-medium" style={{ color: '#684df4' }}>
+              <button onClick={() => fileRef.current.click()} className="text-sm mt-2 font-medium" style={{ color: '#684df4' }}>
                 {avatarUploading ? 'Uploading…' : 'Change photo'}
               </button>
-              {avatarMsg && <p className="text-xs text-green-600 mt-0.5">{avatarMsg}</p>}
+              {avatarMsg && <p className="text-xs text-green-600 mt-1">{avatarMsg}</p>}
+              <div className="mt-4 pt-4 border-t border-black/8">
+                <button
+                  onClick={async () => { await logout(); navigate('/login') }}
+                  className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white"
+                  style={{ background: '#e53e3e' }}
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
 

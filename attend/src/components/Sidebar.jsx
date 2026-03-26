@@ -8,6 +8,7 @@ const navItems = [
   { to: '/billing',      label: 'Billing',      icon: '₹', roles: ['admin','manager','staff','customer'] },
   { to: '/users',        label: 'Users',        icon: '👤', roles: ['admin','manager'] },
   { to: '/products',     label: 'Products',     icon: '◈', roles: ['admin','manager','staff','customer'] },
+  { to: '/whatsapp',     label: 'Contact',      icon: '💬', roles: ['admin','manager','staff','customer'] },
   { to: '/notifications',label: 'Notifications',icon: '🔔', roles: ['admin','manager','staff','customer'] },
   { to: '/settings',     label: 'Settings',     icon: '⚙', roles: ['admin','manager','staff','customer'] },
 ]
@@ -29,8 +30,8 @@ export default function Sidebar({ collapsed, onToggle, onClose, isMobile }) {
 
   return (
     <aside
-      style={{ background: '#111318', minHeight: '100vh' }}
-      className={`flex flex-col transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'} shrink-0`}
+      style={{ background: '#111318' }}
+      className={`flex flex-col h-full transition-all duration-200 ${collapsed ? 'w-16' : 'w-56'} shrink-0`}
     >
       {/* Logo + toggle */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10">
@@ -58,7 +59,7 @@ export default function Sidebar({ collapsed, onToggle, onClose, isMobile }) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-4 space-y-0.5 px-2">
+      <nav className="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto no-scrollbar">
         {visible.map(item => (
           <NavLink
             key={item.to}

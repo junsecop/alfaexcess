@@ -28,3 +28,6 @@ body {
 h1, h2, h3, .font-serif {
   font-family: var(--serif);
 }
+
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
